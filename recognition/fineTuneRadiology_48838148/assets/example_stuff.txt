@@ -1,0 +1,1 @@
+this is just to register the assets folder on git cuz cbbs
