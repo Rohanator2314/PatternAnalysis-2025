@@ -37,6 +37,12 @@ This project fine tunes an opensource encoder-decoder LLM with radiology report 
 
 ## Dataset
 
+The dataset provided on Hugging face contains 4 colums:
+
+| Column Name:  | `source`  | `images_path` | `radiology_report`        | `layman_report`           |
+| Data type:    | `string`  | `string`      | `string`                  | `string`                  |
+| Example Data: | `PadChest`| `21....png`   | `Within normal limits.`   | `Everything looks normal.`|
+
 ## Data Augmentation
 
 ## Model Choice
