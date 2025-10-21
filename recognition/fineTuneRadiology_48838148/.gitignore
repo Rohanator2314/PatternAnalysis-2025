@@ -1,2 +1,6 @@
 .env
-data/
+data
+data/*
+.venv
+.venv/*
+uv.lock

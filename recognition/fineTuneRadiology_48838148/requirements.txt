@@ -1,3 +1,4 @@
-huggingface_hub
-datasets
-python-dotenv
+datasets>=4.2.0
+huggingface-hub>=0.35.3
+python-dotenv>=1.1.1
+transformers>=4.57.1

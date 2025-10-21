@@ -17,8 +17,8 @@
 11. [Conclusion](#conclusion)  
 12. [References](#references)  
 
-
 ## Overview
+
 **Problem:** Translate radiology reports into layperson-friendly summaries.
 
 **Model:** `person/model` (encoder–decoder). Train with Hugging Face [`Trainer`](https://huggingface.co/docs/transformers/en/main_classes/trainer) and evaluate using [ROUGE](https://huggingface.co/spaces/evaluate-metric/rouge).
@@ -27,15 +27,43 @@ This project fine tunes an opensource encoder-decoder LLM with radiology report 
 
 ## Installation
 
-uv pip install -r .\recognition\fineTuneRadiology_48838148\requirements.txt
-
-cmake
-
-huggingface account required to download dataset programatically
-
 ### Requirements
 
-### UV
+- Python 3.8+
+- [UV](https://docs.astral.sh/uv/) package manager (recommended) or pip
+- Hugging Face account with user access token
+
+### Setup
+
+1. Navigate to the project directory:
+
+   ```bash
+   cd recognition/fineTuneRadiology_48838148
+   ```
+
+2. Install dependencies using one of the following methods:
+
+   **Using UV (recommended):**
+
+   ```bash
+   uv sync
+   ```
+
+   **Using pip (works on more devices):**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv pip install -r requirements.txt
+   ```
+
+3. Create a `.env` file from the example and populate your Hugging Face user access token:
+
+   ```
+   HF_TOKEN=your_huggingface_token_here
+   ```
+
+This token is required to download the dataset programmatically by running the `dataset.py` script directly. Alternatively, you can download the dataset directly from the [Hugging Face website](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track).
 
 ## Usage
 
@@ -71,3 +99,4 @@ For the purposes of this fine tuning, only the `radiology_report` and `layman_re
 ## Conclusion
 
 ## References
+
