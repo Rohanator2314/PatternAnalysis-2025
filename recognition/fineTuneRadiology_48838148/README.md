@@ -27,6 +27,12 @@ This project fine tunes an opensource encoder-decoder LLM with radiology report 
 
 ## Installation
 
+uv pip install -r .\recognition\fineTuneRadiology_48838148\requirements.txt
+
+cmake
+
+huggingface account required to download dataset programatically
+
 ### Requirements
 
 ### UV
@@ -37,13 +43,22 @@ This project fine tunes an opensource encoder-decoder LLM with radiology report 
 
 ## Dataset
 
-The dataset provided on Hugging face contains 4 colums:
+The [dataset](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track) provided on Hugging face contains 4 colums:
 
-| Column Name:  | `source`  | `images_path` | `radiology_report`        | `layman_report`           |
-| Data type:    | `string`  | `string`      | `string`                  | `string`                  |
-| Example Data: | `PadChest`| `21....png`   | `Within normal limits.`   | `Everything looks normal.`|
+| Column Name       | Data type | Example Data              |
+| ----------------- | --------- | ------------------------- |
+| source            | string    | `PadChest`                |
+| images_path       | string    | `21684..._02-012-057.png` |
+| radiology_report  | string    | `Within normal limits.`   |
+| layman_report     | string    | `Everything looks normal.`|
+
+The overall dataset is already split into a training split of training data, validating data and testing data. This is from a total of $`\approx 171K`$ rows:
+
+$` 150,454\ (Train) + 10,000\ (Validate) + 10,537\ (Test) = 170,991 `$
 
 ## Data Augmentation
+
+For the purposes of this fine tuning, only the `radiology_report` and `layman_report` features were required.
 
 ## Model Choice
 
