@@ -1,7 +1,11 @@
-from huggingface_hub import login
+from typing import Dict, Any
+from dataclasses import dataclass
 from dotenv import dotenv_values
 
-from datasets import load_dataset
+from huggingface_hub import login
+from datasets import load_dataset, DatasetDict
+from transformers import AutoTokenizer
+
 
 ds = None
 
@@ -22,17 +26,11 @@ def load_local_dataset():
     return ds
 
 
-# Currently chatGPT functions
-from typing import Dict, Any
-from dataclasses import dataclass
-from transformers import AutoTokenizer
-
-
 @dataclass
 class DataConfig:
     model_name: str
-    text_col: str = "report"
-    target_col: str = "summary"
+    text_col: str = "radiology_report"
+    target_col: str = "layman_report"
     max_source_len: int = 512
     max_target_len: int = 128
 
@@ -60,6 +58,29 @@ def tokenise_function(cfg: DataConfig):
         return model_inputs
 
     return _fn
+
+
+def get_tokenised_data(cfg: DataConfig, split: str) -> DatasetDict:
+    dataset = load_local_dataset()[split]
+    tokenise_fn = tokenise_function(cfg)
+    # tokenised_datasets = {}
+    # for split in dataset.keys():
+
+    columns_to_remove = []
+    if "source" in ds.column_names:
+        columns_to_remove.append("source")
+    if "images_path" in ds.column_names:
+        columns_to_remove.append("images_path")
+    if columns_to_remove:
+        ds = ds.remove_columns(columns_to_remove)
+
+    tokenised_datasets = dataset.map(
+        tokenise_fn,
+        batched=True,
+        remove_columns=dataset.column_names,
+    )
+    # tokenised_dataset = DatasetDict(tokenised_datasets)
+    return tokenised_datasets
 
 
 if __name__ == "__main__":
