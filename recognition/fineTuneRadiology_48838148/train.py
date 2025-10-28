@@ -18,6 +18,8 @@ from dataset import get_tokenised_data, DataConfig
 
 # WARN: Enable TF32 only on supported GPUs
 import torch
+torch.backends.cudnn.conv.fp32_precision = 'tf32'
+torch.backends.cuda.matmul.fp32_precision = 'ieee'
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -47,6 +49,7 @@ def compute_metrics_builder(tokenizer):
         )
         # return a few standard aggregates
         return {
+            # TODO: no such thing as mid feature?
             "rouge1": results["rouge1"].mid.fmeasure,
             "rouge2": results["rouge2"].mid.fmeasure,
             "rougeL": results["rougeL"].mid.fmeasure,
@@ -66,6 +69,9 @@ def main():
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument("--bf16", action="store_true")
     args = parser.parse_args()
+
+    if args.bf16:
+        print("Using bfloat16 training")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=True)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name)
