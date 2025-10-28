@@ -109,7 +109,7 @@ def get_tokenised_data(cfg: DataConfig, splits: list[str] = SPLITS) -> DatasetDi
 
 
 if __name__ == "__main__":
-    # download_dataset()
-    ds = load_local_dataset()
-    for split in ds.keys():
-        print(split, ds[split].column_names, len(ds[split]))
+    download_dataset()
+    # ds = load_local_dataset()
+    # for split in ds.keys():
+    #     print(split, ds[split].column_names, len(ds[split]))
