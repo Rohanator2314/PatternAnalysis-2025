@@ -16,6 +16,11 @@ from transformers import (
 
 from dataset import get_tokenised_data, DataConfig
 
+# WARN: Enable TF32 only on supported GPUs
+import torch
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 
 def build_datasets(cfg: DataConfig):
     ds = get_tokenised_data(cfg, splits=["train", "validation"])
@@ -59,6 +64,7 @@ def main():
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--grad_accum", type=int, default=1)
     parser.add_argument("--fp16", action="store_true")
+    parser.add_argument("--bf16", action="store_true")
     args = parser.parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=True)
@@ -88,6 +94,8 @@ def main():
         metric_for_best_model="rougeL",
         greater_is_better=True,
         fp16=args.fp16,
+        bf16=args.bf16,
+        tf32=args.bf16,
         report_to=["none"],  # or "wandb"/"tensorboard" if desired
         predict_with_generate=True,
     )
