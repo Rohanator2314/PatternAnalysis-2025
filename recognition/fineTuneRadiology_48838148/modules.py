@@ -11,7 +11,7 @@ MODEL = "google/flan-t5-base"
 class GenerationConfig:
     max_new_tokens: int = 128
     num_beams: int = 4
-    leancy_penalty: float = 1.0
+    length_penalty: float = 1.0
     temperature: float = 1.0
     top_p: float = 1.0
     no_repeat_ngram_size: int = 3

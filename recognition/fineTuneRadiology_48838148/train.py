@@ -10,8 +10,8 @@ from transformers import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
     DataCollatorForSeq2Seq,
-    Trainer,
-    TrainingArguments,
+    Seq2SeqTrainer as Trainer,
+    Seq2SeqTrainingArguments as TrainingArguments,
 )
 
 from dataset import get_tokenised_data, DataConfig
@@ -89,6 +89,7 @@ def main():
         greater_is_better=True,
         fp16=args.fp16,
         report_to=["none"],  # or "wandb"/"tensorboard" if desired
+        predict_with_generate=True,
     )
 
     trainer = Trainer(
