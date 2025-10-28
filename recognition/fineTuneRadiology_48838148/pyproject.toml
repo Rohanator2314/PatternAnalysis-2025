@@ -9,6 +9,7 @@ dependencies = [
     "accelerate>=1.11.0",
     "datasets>=4.2.0",
     "evaluate>=0.4.6",
+    "hf-transfer>=0.1.9",
     "huggingface-hub>=0.35.3",
     "nltk>=3.9.2",
     "python-dotenv>=1.1.1",
