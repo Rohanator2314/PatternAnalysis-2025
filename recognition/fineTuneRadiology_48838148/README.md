@@ -107,6 +107,25 @@ Saving cleaned dataset back to: data/BioLaySumm2025-LaymanRRG-opensource-track
 Press Enter to continue...
 ```
 
+**Histogram Findings -- Layman Report**:
+
+| Metric | Count | Min | P50 | P75 | P90 | P95 | P99 | Max |
+|--------|------:|----:|----:|----:|----:|----:|----:|----:|
+| Tokens | 150048 | 2 | 40.0 | 67.0 | 99.0 | 127.0 | 290.0 | 1175 |
+| Words  | 150048 | 1 | 30.0 | 50.0 | 73.0 | 94.0  | 208.0 | 817  |
+| Chars  | 150048 | 7 | 167.0| 280.0| 408.0| 522.0 | 1163.5299999999988 | 4709 |
+
+![Layman report length distribution](assets/layman_len_report.png)
+
+**Histogram Findings -- Radiology Report**:
+
+| Metric | Count | Min | P50 | P75 | P90 | P95 | P99 | Max |
+|--------|------:|----:|----:|----:|----:|----:|----:|----:|
+| Tokens | 150048 | 1 | 30.0 | 53.0 | 81.0 | 106.0 | 284.0 | 1725 |
+| Words  | 150048 | 1 | 16.0 | 30.0 | 46.0 | 61.0  | 154.0 | 964  |
+| Chars  | 150048 | 5 | 119.0| 211.0| 322.0| 419.0 | 1078.0 | 6706 |
+
+![Radiology report length distribution](assets/radiology_len_report.png)
 ## Model Choice
 
 ## Fine Tuning
@@ -114,6 +133,22 @@ Press Enter to continue...
 ## LoRA
 
 ## Training hyperparameters results etc
+
+result first run:
+```
+[56268/56268 3:03:30, Epoch 3/3]
+```
+
+| Epoch | Training Loss | Validation Loss | Rouge1  | Rouge2  | RougeL  |
+|------:|---------------:|----------------:|--------:|--------:|--------:|
+| 1     | 0.593300       | 0.485298        | 0.551873| 0.426262| 0.522039|
+| 2     | 0.462300       | 0.441893        | 0.559679| 0.438793| 0.530375|
+| 3     | 0.417800       | 0.424618        | 0.561618| 0.442797| 0.533015|
+
+```
+There were missing keys in the checkpoint model loaded: ['encoder.embed_tokens.weight', 'decoder.embed_tokens.weight'].
+TrainOutput(global_step=56268, training_loss=0.5316248244294194, metrics={'train_runtime': 11012.296, 'train_samples_per_second': 40.876, 'train_steps_per_second': 5.11, 'total_flos': 7.291082302193664e+16, 'train_loss': 0.5316248244294194, 'epoch': 3.0})
+```
 
 ## Conclusion
 

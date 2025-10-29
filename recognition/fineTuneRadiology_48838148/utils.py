@@ -28,7 +28,11 @@ from typing import Iterable, Optional, Sequence
 import os
 import shutil
 import tempfile
+import numpy as np
+import matplotlib.pyplot as plt
+from transformers import AutoTokenizer
 from datasets import load_from_disk, DatasetDict, Dataset
+
 
 
 # Defaults mirror dataset.py
@@ -55,6 +59,126 @@ def _normalize_str(x: Optional[str]) -> str:
 
 def _is_non_empty(s: Optional[str]) -> bool:
     return isinstance(s, str) and len(s.strip()) > 0
+
+
+def plot_layman_length_histogram(
+    *,
+    data_dir: str = DEFAULT_DATA_DIR,
+    split: str = "train",
+    target_col: str = DEFAULT_TARGET_COL,
+    model_name: Optional[str] = None,
+    bins: int = 50,
+    show: bool = True,
+    save_path: Optional[str] = None,
+    add_special_tokens: bool = False,
+    truncation: bool = False,
+) -> dict:
+    """
+    Compute and plot histogram(s) of layman_report lengths for a given split.
+
+    - Always computes character and word length histograms.
+    - If `model_name` is provided, also computes token length histograms using the model's tokenizer.
+    - Returns a dict with arrays and summary statistics for each length type.
+
+    Args:
+        data_dir: Path to dataset saved via `save_to_disk`.
+        split: One of {"train", "validation", "test"} present in the dataset.
+        target_col: Column name for layman text (defaults to 'layman_report').
+        model_name: Optional Hugging Face model name to tokenize with (e.g., 'google/flan-t5-base').
+        bins: Number of bins for hist plots.
+        show: If True, shows the plot. If False, closes the figure (useful when only saving).
+        save_path: If provided, saves the figure to this path.
+        add_special_tokens: Whether to include special tokens when computing token lengths.
+        truncation: Whether to allow tokenizer truncation during tokenization.
+
+    Returns:
+        dict with keys: char_lens, word_lens, token_lens (optional),
+        and stats: char_stats, word_stats, token_stats (optional).
+    """
+    ds = load_from_disk(data_dir)
+    if not isinstance(ds, DatasetDict):
+        raise TypeError(f"Expected a DatasetDict at {data_dir}, got: {type(ds)}")
+    if split not in ds:
+        raise KeyError(f"Split '{split}' not found. Available: {list(ds.keys())}")
+
+    d = ds[split]
+    if target_col not in d.column_names:
+        raise KeyError(
+            f"Column '{target_col}' not found in split '{split}'. "
+            f"Available: {d.column_names}"
+        )
+
+    texts = [t for t in d[target_col] if _is_non_empty(t)]
+    char_lens = np.array([len(t) for t in texts], dtype=np.int32)
+    word_lens = np.array([len(t.split()) for t in texts], dtype=np.int32)
+
+    token_lens = None
+    if model_name:
+        tok = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        tokenized = tok(
+            texts,
+            truncation=truncation,
+            add_special_tokens=add_special_tokens,
+        )
+        token_lens = np.array([len(ids) for ids in tokenized["input_ids"]], dtype=np.int32)
+
+    # Plot
+    num_subplots = 3 if token_lens is not None else 2
+    fig, axes = plt.subplots(1, num_subplots, figsize=(5 * num_subplots, 4))
+
+    if num_subplots == 2:
+        ax_word, ax_char = axes
+    else:
+        ax_tok, ax_word, ax_char = axes
+
+    if token_lens is not None:
+        ax_tok.hist(token_lens, bins=bins, color="steelblue", edgecolor="white")
+        ax_tok.set_title(f"Token lengths ({split})")
+        ax_tok.set_xlabel("Tokens")
+        ax_tok.set_ylabel("Count")
+
+    ax_word.hist(word_lens, bins=bins, color="seagreen", edgecolor="white")
+    ax_word.set_title(f"Word lengths ({split})")
+    ax_word.set_xlabel("Words")
+    ax_word.set_ylabel("Count")
+
+    ax_char.hist(char_lens, bins=bins, color="indianred", edgecolor="white")
+    ax_char.set_title(f"Character lengths ({split})")
+    ax_char.set_xlabel("Characters")
+    ax_char.set_ylabel("Count")
+
+    fig.suptitle("Layman report length distributions")
+    fig.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    def _stats(arr: np.ndarray) -> dict:
+        if arr.size == 0:
+            return {"count": 0, "min": 0, "p50": 0.0, "p75": 0.0, "p90": 0.0, "p95": 0.0, "p99": 0.0, "max": 0}
+        return {
+            "count": int(arr.size),
+            "min": int(arr.min()),
+            "p50": float(np.percentile(arr, 50)),
+            "p75": float(np.percentile(arr, 75)),
+            "p90": float(np.percentile(arr, 90)),
+            "p95": float(np.percentile(arr, 95)),
+            "p99": float(np.percentile(arr, 99)),
+            "max": int(arr.max()),
+        }
+
+    return {
+        "char_lens": char_lens,
+        "word_lens": word_lens,
+        "token_lens": token_lens,
+        "char_stats": _stats(char_lens),
+        "word_stats": _stats(word_lens),
+        "token_stats": _stats(token_lens) if token_lens is not None else None,
+    }
 
 
 def _clean_split(
@@ -285,3 +409,17 @@ if __name__ == "__main__":
         length_ratio=args.length_ratio,
         drop_columns=args.drop_columns,
     )
+
+    # Uncomment to plot layman length histogram
+    # stats = plot_layman_length_histogram(
+    #     data_dir="data/BioLaySumm2025-LaymanRRG-opensource-track",
+    #     split="train",
+    #     target_col=DEFAULT_TARGET_COL,
+    #     model_name="google/flan-t5-base",  # optional
+    #     bins=60,
+    #     show=True,
+    #     save_path=None,
+    #     add_special_tokens=False,
+    #     truncation=False,
+    # )
+    # print(stats["token_stats"], stats["word_stats"], stats["char_stats"])
