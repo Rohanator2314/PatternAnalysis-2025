@@ -4,3 +4,5 @@ data/*
 .venv
 .venv/*
 uv.lock
+outputs
+outputs/*
