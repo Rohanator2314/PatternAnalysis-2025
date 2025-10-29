@@ -29,7 +29,6 @@ import os
 import shutil
 import tempfile
 import numpy as np
-import matplotlib.pyplot as plt
 from transformers import AutoTokenizer
 from datasets import load_from_disk, DatasetDict, Dataset
 
@@ -312,6 +311,7 @@ def clean_and_overwrite_local_cache(
     """
     Load the locally cached dataset from data_dir, clean it, and overwrite on disk.
     """
+    import matplotlib.pyplot as plt # Located here to prevent ModuleNotFoundError
     print(f"Loading dataset from: {data_dir}")
     ds = load_from_disk(data_dir)
     assert isinstance(ds, DatasetDict), "Expected a DatasetDict at the provided data_dir."

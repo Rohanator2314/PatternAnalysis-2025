@@ -23,6 +23,19 @@ def generate_summaries(model_dir: str, inputs: List[str], is_lora: bool = False,
     return tokenizer.batch_decode(output_ids, skip_special_tokens=True)
 
 
+def generate_summaries_base(inputs: List[str], max_new_tokens: int = 128, num_beams: int = 4):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
+    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to(device)
+
+    # Add 'Summarize this radiology report:\n' to the input text
+    inputs = ["Summarize this radiology report:\n" + text for text in inputs]
+
+    enc = tokenizer(inputs, padding=True, truncation=True, return_tensors="pt").to(device)
+    output_ids = model.generate(**enc, max_new_tokens=max_new_tokens, num_beams=num_beams)
+    return tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_dir", required=True, help="Path to fine-tuned model (e.g., outputs/best_model)")
@@ -34,8 +47,9 @@ def main():
 
 
     preds = generate_summaries(args.model_dir, args.input_text, args.is_lora)
-    for i, (src, pred) in enumerate(zip(args.input_text, preds), start=1):
-        print(f"Case {i}\nSOURCE:\n{src}\n---\nSUMMARY:\n{pred}\n")
+    bases = generate_summaries_base(args.input_text)
+    for i, (src, pred, base) in enumerate(zip(args.input_text, preds, bases), start=1):
+        print(f"Case {i}\nSOURCE:\n{src}\n---\nSUMMARY:\n{pred}\n---\nBASE:\n{base}\n")
 
 
 if __name__ == "__main__":
