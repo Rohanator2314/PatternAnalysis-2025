@@ -2,20 +2,20 @@
 
 ## Table of Contents
 
-1. [Overview](#overview)  
-2. [Installation](#installation)  
-    - [Requirements](#requirements)  
-    - [UV](#uv)  
-3. [Usage](#usage)  
-4. [File Structure](#file-structure)  
-5. [Dataset](#dataset)  
-6. [Data Augmentation](#data-augmentation)  
-7. [Model Choice](#model-choice)  
-8. [Fine Tuning](#fine-tuning)  
-9. [LoRA](#lora)  
-10. [Training hyperparameters results etc](#training-hyperparameters-results-etc)  
-11. [Conclusion](#conclusion)  
-12. [References](#references)  
+1. [Overview](#overview)
+2. [Installation](#installation)
+    - [Requirements](#requirements)
+    - [UV](#uv)
+3. [Usage](#usage)
+4. [File Structure](#file-structure)
+5. [Dataset](#dataset)
+6. [Data Augmentation](#data-augmentation)
+7. [Model Choice](#model-choice)
+8. [Fine Tuning](#fine-tuning)
+9. [LoRA](#lora)
+10. [Training hyperparameters results etc](#training-hyperparameters-results-etc)
+11. [Conclusion](#conclusion)
+12. [References](#references)
 
 ## Overview
 
@@ -88,6 +88,25 @@ $` 150,454\ (Train) + 10,000\ (Validate) + 10,537\ (Test) = 170,991 `$
 
 For the purposes of this fine tuning, only the `radiology_report` and `layman_report` features were required.
 
+```
+Loading dataset from: data/BioLaySumm2025-LaymanRRG-opensource-track
+Processing split: train
+Filter: 100%|███████████████████████████████████████████████| 150454/150454 [00:00<00:00, 527177.85 examples/s]
+Filter: 100%|███████████████████████████████████████████████| 150454/150454 [00:00<00:00, 153764.31 examples/s]
+Filter: 100%|███████████████████████████████████████████████| 150374/150374 [00:01<00:00, 125842.54 examples/s]
+Cleaned split: start=150454, after_len_ratio=150374 (-80), after_interpretation=150048 (-326), final=150048, dropped_cols=['source', 'images_path']
+Processing split: validation
+Filter: 100%|█████████████████████████████████████████████████| 10000/10000 [00:00<00:00, 443996.74 examples/s]
+Filter: 100%|█████████████████████████████████████████████████| 10000/10000 [00:00<00:00, 152369.99 examples/s]
+Filter: 100%|███████████████████████████████████████████████████| 9996/9996 [00:00<00:00, 126034.89 examples/s]
+Cleaned split: start=10000, after_len_ratio=9996 (-4), after_interpretation=9983 (-13), final=9983, dropped_cols=['source', 'images_path']
+Processing split: test
+Filter: 100%|█████████████████████████████████████████████████| 10537/10537 [00:00<00:00, 590176.69 examples/s]
+Cleaned split: start=0, after_len_ratio=0 (-0), after_interpretation=0 (-0), final=0, dropped_cols=['source', 'images_path']
+Saving cleaned dataset back to: data/BioLaySumm2025-LaymanRRG-opensource-track
+Press Enter to continue...
+```
+
 ## Model Choice
 
 ## Fine Tuning
@@ -99,4 +118,3 @@ For the purposes of this fine tuning, only the `radiology_report` and `layman_re
 ## Conclusion
 
 ## References
-

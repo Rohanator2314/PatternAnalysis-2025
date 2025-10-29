@@ -50,9 +50,9 @@ def compute_metrics_builder(tokenizer):
         # return a few standard aggregates
         return {
             # TODO: no such thing as mid feature?
-            "rouge1": results["rouge1"].mid.fmeasure,
-            "rouge2": results["rouge2"].mid.fmeasure,
-            "rougeL": results["rougeL"].mid.fmeasure,
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
         }
 
     return compute_metrics
