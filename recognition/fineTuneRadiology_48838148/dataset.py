@@ -6,6 +6,8 @@ from huggingface_hub import login
 from datasets import load_dataset, load_from_disk, DatasetDict, Dataset
 from transformers import AutoTokenizer
 
+from utils import clean_and_overwrite_local_cache
+
 # Where to cache the dataset on disk after first download
 DATASET_REPO_ID = "BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track"
 DATASET_DISK_PATH = "data/BioLaySumm2025-LaymanRRG-opensource-track"
@@ -24,6 +26,8 @@ def download_dataset():
     remote_ds = load_dataset(DATASET_REPO_ID)
     remote_ds.save_to_disk(DATASET_DISK_PATH)
 
+    clean_and_overwrite_local_cache()
+
 
 def load_local_dataset() -> DatasetDict:
     """
@@ -40,8 +44,10 @@ class DataConfig:
     model_name: str
     text_col: str = "radiology_report"
     target_col: str = "layman_report"
-    max_source_len: int = 512
-    max_target_len: int = 128
+    max_source_len: int = 128 # ~p95 token length from README histogram (106)
+    max_target_len: int = 128 # ~p95 token length from README histogram (127)
+    # Instruction prefix to prepend to the source text for T5-style prompting
+    instruction_prefix: str = "Summarize the following radiology report for a layperson:\n"
 
 
 def make_tokenizer(model_name: str):
@@ -53,8 +59,9 @@ def tokenise_function(cfg: DataConfig):
 
     def _fn(batch: Dict[str, Any]) -> Dict[str, Any]:
         # Tokenize the inputs and targets
+        prefixed_inputs = [f"{cfg.instruction_prefix}{t}" for t in batch[cfg.text_col]]
         model_inputs = tok(
-            batch[cfg.text_col],
+            prefixed_inputs,
             max_length=cfg.max_source_len,
             truncation=True,
         )
@@ -110,6 +117,6 @@ def get_tokenised_data(cfg: DataConfig, splits: list[str] = SPLITS) -> DatasetDi
 
 if __name__ == "__main__":
     download_dataset()
-    # ds = load_local_dataset()
-    # for split in ds.keys():
-    #     print(split, ds[split].column_names, len(ds[split]))
+    ds = load_local_dataset()
+    for split in ds.keys():
+        print(split, ds[split].column_names, len(ds[split]))

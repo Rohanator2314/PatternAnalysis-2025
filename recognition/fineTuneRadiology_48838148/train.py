@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+from peft import get_peft_model, LoraConfig, TaskType
 from evaluate import load
 from datasets import DatasetDict
 from transformers import (
@@ -18,8 +19,13 @@ from dataset import get_tokenised_data, DataConfig
 
 # WARN: Enable TF32 only on supported GPUs
 import torch
-torch.backends.cudnn.conv.fp32_precision = 'tf32'
-torch.backends.cuda.matmul.fp32_precision = 'ieee'
+# Wont work on older versions of torch or cpu
+try:
+    torch.backends.cudnn.conv.fp32_precision = 'tf32'
+    torch.backends.cuda.matmul.fp32_precision = 'ieee'
+except:
+    pass
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -53,6 +59,7 @@ def compute_metrics_builder(tokenizer):
             "rouge1": results["rouge1"],
             "rouge2": results["rouge2"],
             "rougeL": results["rougeL"],
+            "rougeLsum": results["rougeLsum"],
         }
 
     return compute_metrics
@@ -62,12 +69,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default="google/flan-t5-base")
     parser.add_argument("--out_dir", default="./outputs")
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--grad_accum", type=int, default=1)
+    parser.add_argument("--grad_accum", type=int, default=2)
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument("--bf16", action="store_true")
+    parser.add_argument("--lora", action="store_true", default=True)
     args = parser.parse_args()
 
     if args.bf16:
@@ -75,6 +83,16 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=True)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name)
+
+    if args.lora:
+        print("Using LoRA")
+        lora_config = LoraConfig(
+            r=16,               # Rank of the low-rank matrices (higher r = more capacity, but more memory usage)
+            lora_alpha=32,      # Scaling factor for LoRA parameters
+            lora_dropout=0.1,   # Standard dropout
+            task_type=TaskType.SEQ_2_SEQ_LM  # Seq2Seq task (because this is text-to-text translation)
+        )
+        model = get_peft_model(model, lora_config)  # Apply LoRA
 
     cfg = DataConfig(model_name=args.model_name)
     ds = build_datasets(cfg)
@@ -97,13 +115,14 @@ def main():
         logging_strategy="steps",
         logging_steps=50,
         load_best_model_at_end=True,
-        metric_for_best_model="rougeL",
+        metric_for_best_model="rougeLsum",
         greater_is_better=True,
         fp16=args.fp16,
         bf16=args.bf16,
         tf32=args.bf16,
         report_to=["none"],  # or "wandb"/"tensorboard" if desired
         predict_with_generate=True,
+        generation_max_length=128,
     )
 
     trainer = Trainer(
@@ -117,8 +136,9 @@ def main():
     )
 
     trainer.train()
-    trainer.save_model(str(out_dir / "best_model"))
-    tokenizer.save_pretrained(str(out_dir / "best_model"))
+    model_dir = "best_model_lora" if args.lora else "best_model"
+    trainer.save_model(str(out_dir / model_dir))
+    tokenizer.save_pretrained(str(out_dir / model_dir))
 
 
 if __name__ == "__main__":
