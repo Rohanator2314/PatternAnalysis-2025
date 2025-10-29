@@ -21,7 +21,7 @@
 
 **Problem:** Translate radiology reports into layperson-friendly summaries.
 
-**Model:** `person/model` (encoder–decoder). Train with Hugging Face [`Trainer`](https://huggingface.co/docs/transformers/en/main_classes/trainer) and evaluate using [ROUGE](https://huggingface.co/spaces/evaluate-metric/rouge).
+**Finetuning Model:** `google/flan-t5-base` (encoder–decoder). Trained with Hugging Face [`Trainer`](https://huggingface.co/docs/transformers/en/main_classes/trainer) and evaluated using [ROUGE](https://huggingface.co/spaces/evaluate-metric/rouge).
 
 This project fine tunes an opensource encoder-decoder LLM with radiology report inputs and lay summary outputs from the [BioLaySumm2025](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track) dataset.
 
@@ -146,9 +146,36 @@ result first run:
 | 3     | 0.417800       | 0.424618        | 0.561618| 0.442797| 0.533015|
 
 ```
-There were missing keys in the checkpoint model loaded: ['encoder.embed_tokens.weight', 'decoder.embed_tokens.weight'].
-TrainOutput(global_step=56268, training_loss=0.5316248244294194, metrics={'train_runtime': 11012.296, 'train_samples_per_second': 40.876, 'train_steps_per_second': 5.11, 'total_flos': 7.291082302193664e+16, 'train_loss': 0.5316248244294194, 'epoch': 3.0})
+metrics={'train_runtime': 11012.296, 'train_samples_per_second': 40.876, 'train_steps_per_second': 5.11, 'total_flos': 7.291082302193664e+16, 'train_loss': 0.5316248244294194, 'epoch': 3.0})
 ```
+
+Sample predictions:
+```
+ython predict.py --model_dir outputs/first_run --input_text "Right parahilar infiltrate and atelectasis. Increased retrocardiac density related to atelectasis and consolidation associated with right pleural effusion. Clinical data is important for correct radiological assessment."
+Case 1
+SOURCE:
+Right parahilar infiltrate and atelectasis. Increased retrocardiac density related to atelectasis and consolidation associated with right pleural effusion. Clinical data is important for correct radiological assessment.
+---
+SUMMARY:
+There is an area of lung inflammation and partially collapsed lung on the right side near the bronchus. There is also an increased density behind the heart, which could be due to the collapsed lung and lung tissue thickening, along with fluid buildup around the lung on the right side. It is important to have clinical data to accurately assess the radiological findings.
+```
+**Actual layman report in data:**
+There is a cloudiness near the right lung's airways and a part of the lung has collapsed. The area behind the heart is denser, which could be due to the collapsed lung and a possible lung infection along with fluid around the right lung. It's important to consider the patient's medical history for a proper understanding of the x-ray.
+
+```
+python predict.py --model_dir outputs/first_run --input_text "No infiltrates or consolidations are observed in the study."
+Case 1
+SOURCE:
+No infiltrates or consolidations are observed in the study.
+---
+SUMMARY:
+The study shows no signs of lung infections or solid areas in the lungs.
+```
+**Actual layman report in data:**
+The study did not show any signs of lung infections or areas of lung tissue replacement.
+
+**Analysis**
+It can be seen that the model correctly translates the radiological findings while also following the same sentence structure as the actual layman report. This shows that the fine tuning has indeed had an effect, although more epochs would be needed to achieve better results and more similar language (resulting also in higher ROUGE-L scores).
 
 ## Conclusion
 
