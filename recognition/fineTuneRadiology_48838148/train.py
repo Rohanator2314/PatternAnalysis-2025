@@ -66,13 +66,14 @@ def compute_metrics_builder(tokenizer):
 
 
 def main():
+    # Default arguments intended for use on A100 GPU
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default="google/flan-t5-base")
     parser.add_argument("--out_dir", default="./outputs")
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--grad_accum", type=int, default=2)
+    parser.add_argument("--lr", type=float, default=6e-5)
+    parser.add_argument("--grad_accum", type=int, default=3)
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument("--bf16", action="store_true")
     parser.add_argument("--lora", action="store_true", default=True)
