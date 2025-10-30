@@ -2,30 +2,41 @@
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Model Choice](#model-choice)
-3. [What is Fine Tuning?](#what-is-fine-tuning)
-4. [Dataset](#dataset)
-5. [Data Augmentation](#data-augmentation)
-6. [Training Setup](#training-setup)
-7. [LoRA Training results](#lora-training-results)
+- [Generating Layperson Summaries of Expert Radiology Reports through Fine-tuning an existing LLM](#generating-layperson-summaries-of-expert-radiology-reports-through-fine-tuning-an-existing-llm)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Model Choice](#model-choice)
+  - [What is Fine Tuning?](#what-is-fine-tuning)
+  - [Dataset](#dataset)
+  - [Data Augmentation](#data-augmentation)
+  - [Training Setup:](#training-setup)
+  - [LoRA Training results](#lora-training-results)
     - [What is LoRA](#what-is-lora)
     - [How to use LoRA](#how-to-use-lora)
     - [Results](#results)
     - [Hyperparameters](#hyperparameters)
     - [Graphs](#graphs)
-    - [Sample predictions](#sample-predictions)
+    - [Sample predictions:](#sample-predictions)
+      - [**CASE 1**](#case-1)
+      - [**CASE 2**](#case-2)
     - [Analysis](#analysis)
+      - [Performance](#performance)
+      - [Convergence and loss curve](#convergence-and-loss-curve)
+      - [Generalization](#generalization)
+      - [Compute and efficiency](#compute-and-efficiency)
+      - [Qualitative findings](#qualitative-findings)
+      - [Next steps](#next-steps)
     - [Optimizations Made](#optimizations-made)
-8. [File Structure](#file-structure)
-9. [Installation](#installation)
+  - [File Structure](#file-structure)
+  - [Installation](#installation)
     - [Requirements](#requirements)
     - [Setup](#setup)
-10. [Usage](#usage)
+  - [Usage](#usage)
     - [Training](#training)
     - [Predictions](#predictions)
-11. [Future Improvements](#future-improvements)
-12. [References](#references)
+    - [Reproducibility](#reproducibility)
+  - [Future Improvements](#future-improvements)
+  - [References and Acknowledgments](#references-and-acknowledgments)
 
 ## Overview
 
@@ -53,13 +64,21 @@ Transformer models are a type of neural network architecture that has been shown
 
 Transformer models are composed of an encoder and a decoder, which work together to process input data and generate output data. The encoder takes the input data and transforms it into a fixed-length representation, while the decoder takes this representation and generates the output data. A key feature of the transformer architecture is self-attention, which is what allows the model to essentially give context to each token through an attention layer. The general transformer architecture is shown below:
 
-![Transformer Model Architecture](assets/transformer_architecture.png)
 <p align="center">
-  <em>Figure 1: Transformer Model Architecture (Vaswani et al., 2024)</em>
+    <img src="assets/transformer_architecture.png" alt="Transformer Model Architecture" width="800"/>
+    <br/>
+    <em>Figure 1: Transformer Model Architecture (Vaswani et al., 2024)</em>
 </p>
 
-This same architecture is used in google's T5 model.\
-To fine tune the model, it is trained on our dataset using cross-entropy loss, AdamW optimizer, and a cosine learning rate scheduler with a custom PyTorch trainer module.
+This same architecture is used in google's T5 model. The fine tuning process effectively modifies the model's weights to adapt to the specific task at hand. The general fine-tuning workflow can be seen below:
+
+<p align="center" style="background: white">
+    <img src="assets/finetune.svg" alt="Fine Tuning Workflow" width="800"/>
+    <br/>
+    <em>Figure 2: Fine Tuning Workflow</em>
+</p>
+
+This project uses a specialized process called LoRA, elaborated on below. To fine tune the model, it is trained on our dataset using cross-entropy loss, AdamW optimizer, and a cosine learning rate scheduler with a custom PyTorch trainer module. See more in the [Training Setup](#training-setup) section.
 
 ## Dataset
 
@@ -75,6 +94,12 @@ The [dataset](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRR
 The overall dataset is already split into a training split of training data, validating data and testing data. This is from a total of $`\approx 171K`$ rows:
 
 $` 150,454\ (Train) + 10,000\ (Validate) + 10,537\ (Test) = 170,991 `$
+
+This project will use the same split as the original dataset. This is because:
+
+- The original dataset was already split into training, validation, and testing sets, which are designed to ensure that the model is not overfitting to the training data -- Keeping the same split means lower risk of overfitting and data leakage.
+- Using the same split ensures that any measures taken in the original dataset to ensure there is no data leakage carries over to this project. The dataset was originally designed for use in a ML competition, so it is trustworthy.
+- Using the same split also allows for a fair comparison of the model's performance on different datasets.
 
 ## Data Augmentation
 
@@ -98,7 +123,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 <p align="center">
     <img src="assets/layman_len_report.png" alt="Layman report length distribution" width="800"/>
     <br/>
-    <em>Figure 2: Layman Report Length Distribution</em>
+    <em>Figure 3: Layman Report Length Distribution</em>
 </p>
 
 **Histogram Findings -- Radiology Report**:
@@ -112,7 +137,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 <p align="center">
     <img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="800"/>
     <br/>
-    <em>Figure 3: Radiology Report Length Distribution</em>
+    <em>Figure 4: Radiology Report Length Distribution</em>
 </p>
 
 Based off this, the model truncates input tokens to a maximum of 128.
@@ -127,10 +152,14 @@ The model is trained with a custom PyTorch trainer module (`Train`) using **ROUG
 **What are ROUGE metrics?**:\
 ROUGE (Recall-Oriented Understudy for Gisting Evaluation) is a set of metrics used to evaluate the quality of text summarization. It measures the overlap between the generated summary and the reference summary, considering different n-gram sizes (unigrams, bigrams, trigrams, etc.). ROUGE-N measures n-gram overlap, ROUGE-L measures longest common subsequence overlap, and ROUGE-S measures skip-bigram overlap. ROUGE-LSum measures skip-trigram overlap.
 
-> For the first full parameter tuning, ROUGE-L was used to determine the best model. For the second LoRA tuning, ROUGE-LSum was used to determine the best model.
-
 **Custom PyTorch Trainer (`Train`)**:\
-A manual training loop was implemented in PyTorch that supports full fine-tuning and LoRA adapters, AdamW optimizer, cosine learning rate scheduling with warmup, gradient accumulation, mixed precision (fp16/bf16), per-epoch validation, and automatic saving of best/last checkpoints and training plots (loss/LR).
+A manual training loop was implemented in PyTorch that supports full fine-tuning and LoRA adapters, AdamW optimizer, cosine learning rate scheduling with warmup, gradient accumulation, mixed precision (fp16/bf16), per-epoch validation, and automatic saving of best/last checkpoints and training plots (loss/LR). The training loop is as such:
+
+- Model is loaded (LoRA adapter made if necessary), inputs are prepended to and tokenized, `Train` module is initialized.
+- Each training loop trains the model using the PyTorch interface, including forward and backward passes, optimizer updates, and loss calculation. The data is also converted to fp16/bf16 if mixed precision is enabled.
+- Training module batches the data into mini-batches and passes them through the model for training, while implementing learning rate scheduling -- running through the specified number of epochs.
+- Model is tested against the validation set after each epoch, and the best model is saved.
+- Training plots and training logs are generated and saved after training.
 
 <!--- Architecture: T5-style Transformer. The encoder reads the input radiology report; the decoder generates the lay summary. Decoder cross-attends to encoder states to condition generation on the source text.
 - Objective: Cross-entropy over decoder tokens (label padding set to -100 so padding is ignored in the loss).
@@ -150,9 +179,10 @@ A manual training loop was implemented in PyTorch that supports full fine-tuning
 
 LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This adds $\frac{\alpha}{r}\cdot B\cdot A\cdot x$ parameters, where $\alpha$ is the scaling factor, $r$ is the rank of the low-rank approximation, $B$ is the number of blocks, $A$ is the number of adapters, and $x$ is the number of parameters in the original model. See the diagram below for a visual representation.
 
-![LoRA Diagram](assets/LoRA.png)
 <p align="center">
-  <em>Figure 4: LoRA Diagram (Daily Dose of Data Science)</em>
+    <img src="assets/LoRA.png" alt="LoRA Diagram" width="800"/>
+    <br/>
+    <em>Figure 5: LoRA Diagram (Daily Dose of Data Science)</em>
 </p>
 
 This approach significantly reduces the number of parameters that need to be updated, resulting in faster training times and lower memory usage.
@@ -199,8 +229,6 @@ The hyperparameters used are the same as the defaults, found [here](#Training)
 ### Graphs
 
 ![Loss Curve](assets/loss_curve.png)
-
-![LR Curve](assets/lr_curve.png)
 
 ### Sample predictions:
 
@@ -310,17 +338,17 @@ In order to optimize the training, the following steps were taken:
 
 ### Requirements
 
-**System**:\
+**System**:
 - Python 3.10+ (Tested on 3.13)
 - CUDA 7+ -- Depending on mixed precision parameters (Tested on 12.6)
 - VRAM Minimum 8GB for LoRA, more recommended
 - RAM 16GB+
 
-**Software**:\
+**Software**:
 - [UV](https://docs.astral.sh/uv/) package manager (recommended) or pip
 - Hugging Face account with user access token
 
-**Dependencies**:\
+**Dependencies**:
 ```
 # Core Dependencies
 datasets>=4.2.0
@@ -403,6 +431,32 @@ Evaluate the model with your own input:
    ```bash
    python predict.py --model_dir model.pth --input_text "Within normal limits." --is_lora
    ```
+
+The `predictions.py` file takes in 3 main input streams:
+
+- `--input_text` (str) to test one input
+- `--validate` to run validation
+- `--random_samples` (int) to test n random samples from the validation set similarly to `--input_text`
+
+### Reproducibility
+To reproduce the results, follow these steps:
+
+1. Ensure use of adequate hardware, includin an Ampere+ GPU with at least 10GB VRAM (min).
+2. Follow the instructions in the [Installation](#installation) section
+3. Run the training with default hyperparameters (reproduce first run):
+```
+python train.py --bf16 --lora
+```
+Or more verbosly:
+```
+python train.py --bf16 --lora\
+    --batch_size 16\
+    --learning_rate 1e-4\
+    --grad_accum 3\
+    --lr 6e-5\
+    --epochs 3\
+```
+Modify hyperparameters as mentioned above to reproduce run 2.
 
 ## Future Improvements
 
