@@ -1,6 +1,7 @@
-# train.py
-# Thin wrapper that delegates training to the Train module.
-# Supports both LoRA adapter fine-tuning and full-parameter fine-tuning based on --lora flag.
+"""CLI entry point for fine-tuning Seq2Seq models (FLAN-T5) on the BioLaySumm dataset.
+Parses command-line arguments, configures optional precision hints, and invokes
+training using the Train helper (full fine-tuning or LoRA via --lora).
+"""
 
 import argparse
 import torch
@@ -9,6 +10,7 @@ from modules import Train
 
 
 def main():
+    """Parse CLI arguments and run training."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", default="google/flan-t5-base")
     parser.add_argument("--out_dir", default="./outputs")
@@ -21,7 +23,6 @@ def main():
     parser.add_argument("--lora", action="store_true")
     args = parser.parse_args()
 
-    # Optional informational print
     if args.bf16:
         print("Using bfloat16 training")
     elif args.fp16:
@@ -49,9 +50,6 @@ def main():
     )
 
     trainer.train()
-
-    # This line is unnecessary as the model is already saved in the "best" directory from train
-    # trainer.save("best")
 
 
 if __name__ == "__main__":

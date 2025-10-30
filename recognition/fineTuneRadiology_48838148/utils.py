@@ -1,23 +1,8 @@
-"""
-Dataset cleaning utilities for BioLaySumm fine-tuning.
+"""Utilities for cleaning and analyzing the BioLaySumm cached dataset.
 
-Features:
-- Remove rows where len(layman_report) > RATIO * len(radiology_report) (plain text char lengths).
-- Remove rows that are likely image-caption cases where radiology_report == 'interpretation' and the image_path is a file.
-- Remove extraneous columns ('source', 'images_path') directly in the cached dataset.
-- Overwrite the local cached dataset on disk after cleaning.
-
-Usage (as a script):
-    python -m a1.recognition.fineTuneRadiology_48838148.utils \
-        --data-dir data/BioLaySumm2025-LaymanRRG-opensource-track \
-        --length-ratio 50
-
-You can also import and call:
-    clean_and_overwrite_local_cache(data_dir=..., length_ratio=50.0)
-
-Notes:
-- This modifies the dataset stored at data_dir in place.
-- Ensure you've downloaded the dataset (via dataset.download_dataset()) before running this.
+- Clean cached splits in place with safe overwrite/rollback
+- Heuristics for outlier length and image-caption rows
+- Plot helpers for length distributions and training curves
 """
 
 from __future__ import annotations
@@ -34,7 +19,7 @@ from datasets import load_from_disk, DatasetDict, Dataset
 
 
 
-# Defaults mirror dataset.py
+
 DEFAULT_DATA_DIR = "data/BioLaySumm2025-LaymanRRG-opensource-track"
 DEFAULT_TEXT_COL = "radiology_report"
 DEFAULT_TARGET_COL = "layman_report"
@@ -43,6 +28,7 @@ DEFAULT_DROP_COLS = ("source", "images_path")
 
 @dataclass
 class CleanConfig:
+    """Options controlling dataset cleaning behavior."""
     data_dir: str = DEFAULT_DATA_DIR
     text_col: str = DEFAULT_TEXT_COL
     target_col: str = DEFAULT_TARGET_COL
@@ -51,12 +37,14 @@ class CleanConfig:
 
 
 def _normalize_str(x: Optional[str]) -> str:
+    """Return x if it is a string, otherwise an empty string."""
     if isinstance(x, str):
         return x
     return ""
 
 
 def _is_non_empty(s: Optional[str]) -> bool:
+    """Return True if s is a non-empty string after stripping whitespace."""
     return isinstance(s, str) and len(s.strip()) > 0
 
 
@@ -233,7 +221,7 @@ def _clean_split(
     dset = dset.filter(length_ratio_filter, batched=True)
     after_len_lr = len(dset)
 
-    # Heuristic image-caption filter on 'interpretation' rows
+
     # Drop if radiology_report == 'interpretation' and (images_path is non-empty or source looks image-based)
     cols = set(dset.column_names)
     has_images_path = "images_path" in cols
@@ -248,7 +236,7 @@ def _clean_split(
             t_norm = _normalize_str(t).strip().lower()
             ip_norm = _normalize_str(ip).strip()
 
-            # Does the image path end with .jpg or .png?
+
             has_image_path = bool(ip_norm) and ip_norm.endswith(('.jpg', '.png', '.jpeg', '.gif'))
 
             # Drop if this looks like an image-caption example with trivial radiology text
@@ -368,6 +356,7 @@ def clean_and_overwrite_local_cache(
 
 
 def plot_loss_curve(losses, save_path: str, title: str = "Training Loss"):
+    """Plot and save the training loss curve."""
     import matplotlib.pyplot as plt  # local import to avoid hard dependency at module import time
     import numpy as np
 
@@ -384,6 +373,7 @@ def plot_loss_curve(losses, save_path: str, title: str = "Training Loss"):
 
 
 def plot_lr_curve(lrs, save_path: str, title: str = "Learning Rate"):
+    """Plot and save the learning rate curve."""
     import matplotlib.pyplot as plt  # local import to avoid hard dependency at module import time
     import numpy as np
 

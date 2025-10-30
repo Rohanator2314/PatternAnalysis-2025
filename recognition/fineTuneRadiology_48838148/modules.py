@@ -1,3 +1,4 @@
+"""Training and inference helpers for FLAN-T5 radiology summarization with optional LoRA."""
 from dataclasses import dataclass
 from typing import Optional, List
 
@@ -20,6 +21,7 @@ MODEL = "google/flan-t5-base"
 
 @dataclass
 class GenerationConfig:
+    """Decoding and input generation parameters used by SummarizationModel.generate."""
     max_new_tokens: int = 128
     num_beams: int = 4
     length_penalty: float = 1.0
@@ -35,12 +37,14 @@ class SummarizationModel(torch.nn.Module):
     """
 
     def __init__(self, model_name: str = MODEL, tokenizer_name_or_path: Optional[str] = None):
+        """Initialize tokenizer and base seq2seq model."""
         super().__init__()
         tok_source = tokenizer_name_or_path or model_name
         self.tokenizer = AutoTokenizer.from_pretrained(tok_source, use_fast=True)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     def forward(self, **batch):
+        """Forward pass proxy to the underlying seq2seq model."""
         return self.model(**batch)
 
     @torch.no_grad()
@@ -50,6 +54,7 @@ class SummarizationModel(torch.nn.Module):
         gen_cfg: GenerationConfig = GenerationConfig(),
         device: Optional[torch.device] = None,
     ) -> List[str]:
+        """Generate summaries for input texts using configured decoding parameters."""
         self.model.eval()
 
         device = device or next(self.model.parameters()).device
@@ -74,6 +79,7 @@ class SummarizationModel(torch.nn.Module):
         return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
     def to_device(self, device: str):
+        """Move underlying model to the specified device and return self."""
         self.model.to(device)
         return self
 
@@ -228,6 +234,7 @@ class Train:
         warmup_ratio: float = 0.03,
         log_every: int = 50,
     ):
+        """Configure training components (model, optimizer, scheduler, data loaders)."""
         if grad_accum < 1:
             raise ValueError(f"Invalid grad_accum={grad_accum}. It must be >= 1.")
         self.lora = lora
@@ -332,6 +339,7 @@ class Train:
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
     def _train_one_epoch(self):
+        """Run one training epoch with gradient accumulation, clipping, AMP, and logging."""
         model = self.model
         optimizer = self.optimizer
         scheduler = self.scheduler
@@ -412,6 +420,7 @@ class Train:
 
     @torch.no_grad()
     def _evaluate(self) -> float:
+        """Evaluate on the validation loader and return average loss."""
         model = self.model
         device = self.device
         use_autocast = (device.type == "cuda") and (self.autocast_dtype is not None)
@@ -441,6 +450,7 @@ class Train:
         return total_loss / max(1, count)
 
     def train(self):
+        """Main training loop across epochs; saves best and last checkpoints and plots."""
         import time
         for epoch in range(1, self.epochs + 1):
             print(f"\nEpoch {epoch}/{self.epochs}")
@@ -493,6 +503,7 @@ class Train:
             json.dump(stats, f, indent=2)
 
     def _save_model(self, out_dir: Path):
+        """Persist current model and tokenizer to the specified directory."""
         out_dir.mkdir(parents=True, exist_ok=True)
         self.model.save_pretrained(str(out_dir))
         self.tokenizer.save_pretrained(str(out_dir))

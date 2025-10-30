@@ -1,5 +1,5 @@
-# predict.py
-# Load the trained checkpoint and run inference on raw text inputs.
+"""CLI utilities for running inference and quick evaluations with fine-tuned or LoRA-adapted
+FLAN-T5 models on radiology reports."""
 import argparse
 import random
 from typing import List
@@ -11,6 +11,18 @@ from dataset import load_local_dataset, DataConfig
 
 
 def generate_summaries(model_dir: str, inputs: List[str], is_lora: bool = False, max_new_tokens: int = 128, num_beams: int = 4):
+    """Generate layman-friendly summaries using a fine-tuned or LoRA-adapted model.
+
+    Args:
+        model_dir: Path to the fine-tuned model directory or LoRA adapter directory.
+        inputs: Raw radiology report texts to summarize.
+        is_lora: If True, load a base model and apply LoRA adapters from model_dir.
+        max_new_tokens: Maximum tokens to generate per summary.
+        num_beams: Beam width for beam search.
+
+    Returns:
+        A list of generated summaries, one per input.
+    """
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     if is_lora:
@@ -28,10 +40,21 @@ def generate_summaries(model_dir: str, inputs: List[str], is_lora: bool = False,
 
 
 def generate_summaries_base(inputs: List[str], max_new_tokens: int = 128, num_beams: int = 4):
+    """Generate summaries with the base FLAN-T5 model using a simple instruction prefix.
+
+    This serves as a baseline without any fine-tuning or adapters.
+
+    Args:
+        inputs: Raw radiology report texts to summarize.
+        max_new_tokens: Maximum tokens to generate per summary.
+        num_beams: Beam width for beam search.
+
+    Returns:
+        A list of generated summaries from the base model.
+    """
     device = "cuda" if torch.cuda.is_available() else "cpu"
     sm = SummarizationModel.from_finetuned(model_dir="google/flan-t5-base", device=device)
 
-    # Add 'Summarize this radiology report:\n' to the input text
     inputs = ["Summarize this radiology report into layman terms:\n" + text for text in inputs]
 
     gen_cfg = GenerationConfig(max_new_tokens=max_new_tokens, num_beams=num_beams)
@@ -39,6 +62,13 @@ def generate_summaries_base(inputs: List[str], max_new_tokens: int = 128, num_be
 
 
 def main():
+    """Command-line entry point.
+
+    Modes:
+        --validate: Compute ROUGE on the validation split.
+        --random_samples N: Compare fine-tuned/LoRA model vs. base model on N random validation samples.
+        default: Compare fine-tuned/LoRA model vs. base model on provided --input_text.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_dir", required=True, help="Path to fine-tuned model (e.g., outputs/best_model)")
     parser.add_argument("--is_lora", action="store_true", help="Whether to use LoRA")

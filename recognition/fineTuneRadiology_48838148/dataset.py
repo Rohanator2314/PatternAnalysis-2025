@@ -1,3 +1,4 @@
+"""Dataset utilities for BioLaySumm radiology summarization: download, caching, tokenization, and configuration."""
 from typing import Dict, Any
 from dataclasses import dataclass
 from dotenv import dotenv_values
@@ -17,6 +18,10 @@ ds = None
 
 
 def download_dataset():
+    """Download the dataset from Hugging Face, cache it to disk, and clean the local cache.
+
+    Expects an HF token in .env as HF_TOKEN; saves to DATASET_DISK_PATH and runs clean_and_overwrite_local_cache.
+    """
     config = dotenv_values(".env")
     if not "HF_TOKEN" in config or not config["HF_TOKEN"]:
         raise ValueError("HF_TOKEN not found in .env file")
@@ -41,6 +46,7 @@ def load_local_dataset() -> DatasetDict:
 
 @dataclass
 class DataConfig:
+    """Configuration for dataset columns, max sequence lengths, and the instruction prefix used for prompting."""
     model_name: str
     text_col: str = "radiology_report"
     target_col: str = "layman_report"
@@ -51,14 +57,17 @@ class DataConfig:
 
 
 def make_tokenizer(model_name: str):
+    """Create and return a fast Hugging Face tokenizer for the given model name."""
     return AutoTokenizer.from_pretrained(model_name, use_fast=True)
 
 
 def tokenise_function(cfg: DataConfig):
+    """Build a dataset.map-compatible function that tokenizes inputs and targets according to DataConfig."""
     tok = make_tokenizer(cfg.model_name)
 
     def _fn(batch: Dict[str, Any]) -> Dict[str, Any]:
-        # Tokenize the inputs and targets
+        """Tokenize a batch of examples and attach label input_ids under 'labels'."""
+
         prefixed_inputs = [f"{cfg.instruction_prefix}{t}" for t in batch[cfg.text_col]]
         model_inputs = tok(
             prefixed_inputs,
@@ -79,8 +88,9 @@ def tokenise_function(cfg: DataConfig):
 def get_tokenised_split(
     cfg: DataConfig, datasetDict: DatasetDict, split: str
 ) -> Dataset:
+    """Tokenize one split after validating columns and dropping extraneous ones."""
     dataset = datasetDict[split]
-    # Sanity-check expected columns
+
     required_cols = {cfg.text_col, cfg.target_col}
     missing = required_cols.difference(set(dataset.column_names))
     if missing:
@@ -103,11 +113,12 @@ def get_tokenised_split(
         batched=True,
         remove_columns=dataset.column_names,
     )
-    # tokenised_dataset = DatasetDict(tokenised_datasets)
+
     return tokenised_datasets
 
 
 def get_tokenised_data(cfg: DataConfig, splits: list[str] = SPLITS) -> DatasetDict:
+    """Return a DatasetDict of tokenized splits using the provided configuration."""
     datasetDict = load_local_dataset()
 
     return DatasetDict(
