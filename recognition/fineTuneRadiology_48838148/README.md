@@ -7,8 +7,7 @@
 3. [What is Fine Tuning?](#what-is-fine-tuning)
 4. [Dataset](#dataset)
 5. [Data Augmentation](#data-augmentation)
-6. [Fine Tuning](#fine-tuning)
-    - [Training Setup](#training-setup)
+6. [Training Setup](#training-setup)
 7. [Full parameter training results](#full-parameter-training-results)
     - [Hyperparameters](#hyperparameters)
     - [Sample predictions](#sample-predictions)
@@ -39,7 +38,7 @@ After getting imaging done, patients often want to know their results immediatel
 This project aims to address these issues by fine-tuning an open-source encoder-decoder language model with radiology report inputs and lay summary outputs from the [BioLaySumm2025](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track) dataset -- increasing its accuracy and reliability.
 
 **Finetuning Model:**\
-`google/flan-t5-base` (encoder–decoder) was chosen to finetune -- this choice is discussed in detail in the [Model Choice](#model-choice) section. The model is trained with Hugging Face [`Trainer`](https://huggingface.co/docs/transformers/en/main_classes/trainer) and evaluated using [ROUGE](https://huggingface.co/spaces/evaluate-metric/rouge).
+`google/flan-t5-base` (encoder–decoder) was chosen to finetune -- this choice is discussed in detail in the [Model Choice](#model-choice) section. The model is trained with a custom PyTorch trainer module (`Train`) and evaluated using [ROUGE](https://huggingface.co/spaces/evaluate-metric/rouge).
 
 ## Model Choice
 
@@ -61,7 +60,7 @@ Transformer models are composed of an encoder and a decoder, which work together
 ![Transformer Model Architecture](assets/transformer_architecture.png)
 
 This same architecture is used in google's T5 model.\
-To fine tune the model, it is trained on our dataset specifically, using cross-entropy loss, Adam optimizer, and a linear scheduler as is the default with HF Trainer.
+To fine tune the model, it is trained on our dataset using cross-entropy loss, AdamW optimizer, and a cosine learning rate scheduler with a custom PyTorch trainer module.
 
 ## Dataset
 
@@ -111,21 +110,20 @@ Finally, to optimize the training, the length of the layman report and radiology
 
 Based off this, the model truncates input tokens to a maximum of 128.
 
-## Fine Tuning
+## Training Setup:
+The model is trained with a custom PyTorch trainer module (`Train`) using **ROUGE** as the evaluation metric.
 
-We fine-tune the `google/flan-t5-base` encoder-decoder model with a **cross-entropy loss** to predict layperson summaries from radiology reports. The encoder processes the radiology text, while the decoder generates the corresponding summary.
-To steer the model towards generating **layperson-friendly summaries**, we prepend the text with "Summarize the following radiology report for a layperson:".
-
-### Training Setup:
-The model is trained with Hugging Face's **Seq2SeqTrainer** using **ROUGE** as the evaluation metric.
+**Hardware Used:**:\
+**GPU:** NVIDIA A100 PCIe (80GB VRAM)
+**Memory:** 117GB available RAM
 
 **What are ROUGE metrics?**:\
 ROUGE (Recall-Oriented Understudy for Gisting Evaluation) is a set of metrics used to evaluate the quality of text summarization. It measures the overlap between the generated summary and the reference summary, considering different n-gram sizes (unigrams, bigrams, trigrams, etc.). ROUGE-N measures n-gram overlap, ROUGE-L measures longest common subsequence overlap, and ROUGE-S measures skip-bigram overlap. ROUGE-LSum measures skip-trigram overlap.
 
 > For the first full parameter tuning, ROUGE-L was used to determine the best model. For the second LoRA tuning, ROUGE-LSum was used to determine the best model.
 
-**What is HF Seq2SeqTrainer?**:\
-The model is trained using Hugging Face's Seq2SeqTrainer, which provides a convenient interface for training sequence-to-sequence models. It includes features like automatic hyperparameter tuning, distributed training, and easy integration with popular libraries like PyTorch and TensorFlow. It also supports various training strategies, such as teacher forcing, which we use to maximize the conditional likelihood of the lay summary given the radiology report.
+**Custom PyTorch Trainer (`Train`)**:\
+A manual training loop was implemented in PyTorch that supports full fine-tuning and LoRA adapters, AdamW optimizer, cosine learning rate scheduling with warmup, gradient accumulation, mixed precision (fp16/bf16), per-epoch validation, and automatic saving of best/last checkpoints and training plots (loss/LR).
 
 <!--- Architecture: T5-style Transformer. The encoder reads the input radiology report; the decoder generates the lay summary. Decoder cross-attends to encoder states to condition generation on the source text.
 - Objective: Cross-entropy over decoder tokens (label padding set to -100 so padding is ignored in the loss).
@@ -206,7 +204,16 @@ It can be seen that the model correctly translates the radiological findings whi
 
 ### What is LoRA
 
-LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This approach significantly reduces the number of parameters that need to be updated, resulting in faster training times and lower memory usage. At the same time, it does not compromise the model's performance significantly and is ideal for smaller modifications such as this project.
+LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This adds $\frac{\alpha}{r}\dot B\dot A\dot x$ parameters, where $\alpha$ is the scaling factor, $r$ is the rank of the low-rank approximation, $B$ is the number of blocks, $A$ is the number of adapters, and $x$ is the number of parameters in the original model.
+
+![LoRA Diagram](assets/LoRA.png)
+
+This approach significantly reduces the number of parameters that need to be updated, resulting in faster training times and lower memory usage.
+
+At the same time, it does not compromise the model's performance significantly (95 - 99% full tuning performance) and is ideal for smaller modifications such as this project (Vladislav Lialin, 2024).
+
+As discussed in the [Model Choice](#model-choice) section, LoRA scales the number of parameters to train down to 1.41%, significanly reducing memory requirements and storage requirements.
+
 
 ### How to use LoRA
 
@@ -283,7 +290,7 @@ In order to optimize the training, the following steps were taken:
 - `assets/` — Images and plots used in the README and analysis.
 - `data/` — Local cache for the BioLaySumm dataset saved by `dataset.py` at `data/BioLaySumm2025-LaymanRRG-opensource-track` (created after first download).
 - `outputs/` — Training artifacts and checkpoints saved by `train.py` (e.g., `best_model` or `best_model_lora`).
-- `train.py` — Fine-tunes `google/flan-t5-base` with Hugging Face Trainer (LoRA optional).
+- `train.py` — Thin wrapper delegating to the custom PyTorch trainer module (`Train`) for fine-tuning (LoRA optional).
 - `predict.py` — Loads a trained checkpoint and generates lay summaries (`--model_dir`, `--input_text`, `--is_lora`).
 - `dataset.py` — Handles dataset download, local caching, and tokenization utilities.
 - `utils.py` — Dataset cleaning and histogram/analysis helpers.
@@ -295,9 +302,35 @@ In order to optimize the training, the following steps were taken:
 
 ### Requirements
 
-- Python 3.13+
+**System**:\
+- Python 3.10+ (Tested on 3.13)
+- CUDA 7+ -- Depending on mixed precision parameters (Tested on 12.6)
+- VRAM Minimum 8GB for LoRA, more recommended
+- RAM 16GB+
+
+**Software**:\
 - [UV](https://docs.astral.sh/uv/) package manager (recommended) or pip
 - Hugging Face account with user access token
+
+**Dependencies**:\
+```
+# Core Dependencies
+datasets>=4.2.0
+evaluate>=0.4.6
+huggingface-hub>=0.35.3
+peft>=0.17.1
+python-dotenv>=1.1.1
+rouge-score>=0.1.2
+torch>=2.9.0
+transformers>=4.57.1
+matplotlib>=3.10.7
+
+# Additional Dependencies (manual install)
+absl-py>=2.3.1
+accelerate>=1.11.0
+hf-transfer>=0.1.9
+nltk>=3.9.2
+```
 
 ### Setup
 
@@ -385,3 +418,7 @@ On the training side:
 * Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I. (2017). *Attention is all you need*. *arXiv*. [https://doi.org/10.48550/arXiv.1706.03762](https://doi.org/10.48550/arXiv.1706.03762)
 
 * NVIDIA Corporation. (n.d.). *Mixed precision training*. [https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html](https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html)
+
+https://www.dailydoseofds.com/implementing-lora-from-scratch-for-fine-tuning-llms/
+
+https://doi.org/10.48550/arXiv.2303.15647

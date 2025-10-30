@@ -23,7 +23,7 @@ Notes:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Optional, Sequence
+from typing import Optional, Sequence
 
 import os
 import shutil
@@ -94,6 +94,7 @@ def plot_layman_length_histogram(
         dict with keys: char_lens, word_lens, token_lens (optional),
         and stats: char_stats, word_stats, token_stats (optional).
     """
+    import matplotlib.pyplot as plt
     ds = load_from_disk(data_dir)
     if not isinstance(ds, DatasetDict):
         raise TypeError(f"Expected a DatasetDict at {data_dir}, got: {type(ds)}")
@@ -122,6 +123,7 @@ def plot_layman_length_histogram(
         token_lens = np.array([len(ids) for ids in tokenized["input_ids"]], dtype=np.int32)
 
     # Plot
+    ax_tok = None
     num_subplots = 3 if token_lens is not None else 2
     fig, axes = plt.subplots(1, num_subplots, figsize=(5 * num_subplots, 4))
 
@@ -131,6 +133,7 @@ def plot_layman_length_histogram(
         ax_tok, ax_word, ax_char = axes
 
     if token_lens is not None:
+        assert ax_tok is not None
         ax_tok.hist(token_lens, bins=bins, color="steelblue", edgecolor="white")
         ax_tok.set_title(f"Token lengths ({split})")
         ax_tok.set_xlabel("Tokens")
@@ -237,7 +240,7 @@ def _clean_split(
 
     def interpretation_filter(batch):
         texts = batch[text_col]
-        targets = batch[target_col]
+
         images = batch["images_path"] if has_images_path else [None] * len(texts)
 
         keep = []
@@ -311,7 +314,7 @@ def clean_and_overwrite_local_cache(
     """
     Load the locally cached dataset from data_dir, clean it, and overwrite on disk.
     """
-    import matplotlib.pyplot as plt # Located here to prevent ModuleNotFoundError
+
     print(f"Loading dataset from: {data_dir}")
     ds = load_from_disk(data_dir)
     assert isinstance(ds, DatasetDict), "Expected a DatasetDict at the provided data_dir."
@@ -348,7 +351,7 @@ def clean_and_overwrite_local_cache(
         if os.path.exists(backup_dir):
             shutil.rmtree(backup_dir)
         print("Done.")
-    except Exception as e:
+    except Exception:
         # Attempt to restore from backup on failure
         if os.path.exists(backup_dir):
             if os.path.exists(data_dir):
@@ -362,6 +365,38 @@ def clean_and_overwrite_local_cache(
         # If tmp_dir still exists (e.g., on failure), remove it
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def plot_loss_curve(losses, save_path: str, title: str = "Training Loss"):
+    import matplotlib.pyplot as plt  # local import to avoid hard dependency at module import time
+    import numpy as np
+
+    steps = np.arange(1, len(losses) + 1)
+    plt.figure(figsize=(7, 4))
+    plt.plot(steps, losses, color="steelblue", linewidth=1.5)
+    plt.xlabel("Optimizer steps")
+    plt.ylabel("Loss")
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.close()
+
+
+def plot_lr_curve(lrs, save_path: str, title: str = "Learning Rate"):
+    import matplotlib.pyplot as plt  # local import to avoid hard dependency at module import time
+    import numpy as np
+
+    steps = np.arange(1, len(lrs) + 1)
+    plt.figure(figsize=(7, 4))
+    plt.plot(steps, lrs, color="darkorange", linewidth=1.5)
+    plt.xlabel("Optimizer steps")
+    plt.ylabel("LR")
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.close()
 
 
 if __name__ == "__main__":
