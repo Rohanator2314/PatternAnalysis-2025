@@ -8,28 +8,24 @@
 4. [Dataset](#dataset)
 5. [Data Augmentation](#data-augmentation)
 6. [Training Setup](#training-setup)
-7. [Full parameter training results](#full-parameter-training-results)
-    - [Hyperparameters](#hyperparameters)
-    - [Sample predictions](#sample-predictions)
-    - [Analysis](#analysis)
-    - [Optimizations Made](#optimizations-made)
-8. [LoRA Training results](#lora-training-results)
+7. [LoRA Training results](#lora-training-results)
     - [What is LoRA](#what-is-lora)
     - [How to use LoRA](#how-to-use-lora)
     - [Results](#results)
-    - [Hyperparameters](#hyperparameters-1)
-    - [Sample predictions](#sample-predictions-1)
-    - [Analysis](#analysis-1)
-    - [Optimizations Made](#optimizations-made-1)
-9. [File Structure](#file-structure)
-10. [Installation](#installation)
+    - [Hyperparameters](#hyperparameters)
+    - [Graphs](#graphs)
+    - [Sample predictions](#sample-predictions)
+    - [Analysis](#analysis)
+    - [Optimizations Made](#optimizations-made)
+8. [File Structure](#file-structure)
+9. [Installation](#installation)
     - [Requirements](#requirements)
     - [Setup](#setup)
-12. [Usage](#usage)
+10. [Usage](#usage)
     - [Training](#training)
     - [Predictions](#predictions)
-13. [Future Improvements](#future-improvements)
-14. [References](#references)
+11. [Future Improvements](#future-improvements)
+12. [References](#references)
 
 ## Overview
 
@@ -146,70 +142,7 @@ A manual training loop was implemented in PyTorch that supports full fine-tuning
 - Tokenization: Uses the pretrained SentencePiece tokenizer that ships with the checkpoint.
 - Training setup: Hugging Face `Seq2SeqTrainer` with `predict_with_generate=True` and ROUGE metrics (`rouge1`, `rouge2`, `rougeL`, `rougeLsum`). The best checkpoint is selected by `rougeLsum`.-->
 
-## Full parameter training results
-For the first run of training, the model was trained without optimizations such as LoRA, gradient accumulation and input text prepending. The model was also evaluated on ROUGE-L rather than ROUGE-Lsum. The training results are shown below:
 
-| Metric                                | Value                                |
-|--------------------------------------:|-------------------------------------:|
-| ROUGE-1 (final epoch)                 | 0.561618     (56.16%)                |
-| ROUGE-2 (final epoch)                 | 0.442797     (44.28%)                |
-| ROUGE-L (final epoch)                 | 0.533015     (53.30%)                |
-| Total training time                   | 11012.296 seconds (≈ 3:03:30)        |
-| Total epochs                          | 3.0                                  |
-
-### Hyperparameters
-
-| Hyperparameter                        | Value                                |
-|--------------------------------------:|-------------------------------------:|
-| Learning rate                         | 2e-4                                 |
-| Batch size                            | 8                                    |
-| Gradient accumulation steps           | 1                                    |
-| Epochs                                | 3                                    |
-| Input text prepending                 | False                                |
-
-### Sample predictions:
-
----
-
-#### **CASE 1**
-**SOURCE**:\
-Right parahilar infiltrate and atelectasis. Increased retrocardiac density related to atelectasis and consolidation associated with right pleural effusion. Clinical data is important for correct radiological assessment.
-
-**BASE MODEL (with prompt)**:\
-Clinical data are important for correct radiological assessment of right parahilar infiltrate and atelectasis.
-
-**SUMMARY**:\
-There is an area of lung inflammation and partially collapsed lung on the right side near the bronchus. There is also an increased density behind the heart, which could be due to the collapsed lung and lung tissue thickening, along with fluid buildup around the lung on the right side. It is important to have clinical data to accurately assess the radiological findings.
-
-**SUMMARY -- FROM DATA**:\
-There is a cloudiness near the right lung's airways and a part of the lung has collapsed. The area behind the heart is denser, which could be due to the collapsed lung and a possible lung infection along with fluid around the right lung. It's important to consider the patient's medical history for a proper understanding of the x-ray.
-
----
-
-#### **CASE 2**
-**SOURCE**:\
-Calcified granuloma in the right lung vertex.
-
-**BASE MODEL (with prompt)**:\
-A calcified granuloma in the right lung vertex.
-
-**SUMMARY**:\
-There is a calcified granuloma, which is a type of hardened lump, located at the top of the right lung.
-
-**SUMMARY -- FROM DATA**:\
-There is a calcified granuloma located at the top of the right lung.
-
----
-> Prompt: `Summarize this radiology report:\n`
-
-### Analysis
-It can be seen that the model correctly translates the radiological findings while also following the same sentence structure as the actual layman report. This shows that the fine tuning has indeed had an effect, although more epochs would be needed to achieve better results and more similar language (resulting also in higher ROUGE-L scores). Even so the model still generates a report that is understandable and informative.
-
-### Optimizations Made
-
-- Mixed precision and math optimizations:
-  - `--fp16` or `--bf16` flags to enable mixed precision; TF32 enabled on Ampere+ for faster matmul where supported.
-- Generation during evaluation uses `num_beams=4` and `generation_max_length=128` for consistent ROUGE scoring.
 
 ## LoRA Training results
 
@@ -238,6 +171,7 @@ Only adapter parameters are updated; base weights remain frozen. Checkpoints are
 
 ### Results
 
+Run 1 (LoRA default)
 | Metric                                | Value                                |
 |--------------------------------------:|-------------------------------------:|
 | ROUGE-1 (final epoch)                 | 0.6778344478 (67.78%)                |
@@ -246,21 +180,27 @@ Only adapter parameters are updated; base weights remain frozen. Checkpoints are
 | ROUGE-Lsum (final epoch)              | 0.6188210466 (61.88%)                |
 | Total training time                   | 2880.36 seconds (≈ 0:48:0)           |
 | Total epochs                          | 3.0                                  |
-peak gpu 8.4GB
+| Peak GPU usage                        | 8.4 GB                               |
 
-with batch_size 8, grad 1:
-Validation ROUGE:
-  rouge1: 0.7042
-  rouge2: 0.5105
-  rougeL: 0.6485
-  rougeLsum: 0.6485
-
-time: 34.9 min + 34.8 min + 34.5 min
-peak gpu usage 3.75 GB
+Run 2 (LoRA: batch_size=8, grad=1)
+| Metric                                | Value                                |
+|--------------------------------------:|-------------------------------------:|
+| ROUGE-1 (validation)                  | 0.7042                               |
+| ROUGE-2 (validation)                  | 0.5105                               |
+| ROUGE-L (validation)                  | 0.6485                               |
+| ROUGE-Lsum (validation)               | 0.6485                               |
+| Per-epoch times (minutes)             | 34.9, 34.8, 34.5                     |
+| Peak GPU usage                        | 3.75 GB                              |
 
 ### Hyperparameters
 
 The hyperparameters used are the same as the defaults, found [here](#Training)
+
+### Graphs
+
+![Loss Curve](assets/loss_curve.png)
+
+![LR Curve](assets/lr_curve.png)
 
 ### Sample predictions:
 
@@ -297,11 +237,48 @@ There is a calcified granuloma located at the top of the right lung.
 ---
 > Prompt: `Summarize this radiology report:\n`
 
-### Analysis
-With the optimizations made, training time was reduced by almost 50% while maintaining greater performance:
+**Further Data**:\
+Further data was generated using:
+```bash
+python predict.py --random_samples 10 --model_dir outputs/lora_large_batch --is_lora > assets/random_results
+```
+The results can be found [here](assets/random_results)
 
-- Training time reduced dramatically despite larger batch sizes and more gradient accumulation steps.
-- Likely due to the larger effective batch size and additional data augmentation the model performed much better, achieving a ROUGE-Lsum score of 61.88% in only 3 epochs.
+### Analysis
+
+#### Performance
+- Run 1 (LoRA default (batch_size=16, grad_accumulation_steps=3)): ROUGE-1/2/L/Lsum (final epoch) = 67.78/46.89/61.88/61.88.
+- Run 2 (LoRA: batch_size=8, grad_accumulation_steps=1): Validation ROUGE-1/2/L/Lsum = 70.42/51.05/64.85/64.85.
+- Interpretation: Run 2 outperforms Run 1 across all ROUGE variants, suggesting that the smaller effective batch size helped stabilize gradients and improved sequence-level quality.
+
+#### Convergence and loss curve
+- The attached training loss curve shows a rapid initial decline from roughly the high-2s to below 2.0 within the first few hundred optimizer steps, followed by a smooth, monotonic decay toward ~1.1–1.3 by the end of training.
+- The variance (jitter) around the trend line is moderate and consistent with mini-batch training; there are no spikes indicative of divergence, unstable learning rates, or exploding gradients.
+- The tail of the curve is still gently trending downward, indicating mild underfitting and room for small additional gains with 1–2 more epochs or a short cosine LR decay tail.
+- No signs of mode collapse or catastrophic forgetting are visible; loss decreases steadily without abrupt plateaus or rebounds.
+
+#### Generalization
+- Run 2’s strong and balanced validation ROUGE (especially ROUGE-L/Lsum ≈ 0.65) suggests improved generalization relative to Run 1’s final-epoch evaluation.
+- The lack of instability in the loss curve combined with consistent validation metrics indicates no obvious overfitting within 3 epochs. Further epochs should be coupled with early stopping on ROUGE-Lsum to prevent late-epoch overfitting.
+
+#### Compute and efficiency
+- Run 1: ≈48 minutes total, peak GPU ≈8.4 GB.
+- Run 2: ≈34–35 minutes per epoch (≈104 minutes total over 3 epochs), peak GPU ≈3.75 GB.
+
+Smaller batch sizes in Run 2 reduce memory usage substantially but increase wall-clock time. This is consistent with different effective batch/accumulation choices and checkpointing/pipeline overheads.
+Possible improvements include increasing dataloader workers and enabling pinned memory, profiling I/O, and revisiting gradient accumulation vs. batch size to target a higher tokens/sec while staying within VRAM.
+
+#### Qualitative findings
+- The model reliably paraphrases domain terms (“atelectasis,” “pleural effusion,” “calcified granuloma”) into lay language and preserves key clinical relations (location, laterality, associations).
+- Outputs are generally concise and readable and follow the correct sentence structure, though occasionally include mild verbosity. Factual fidelity is good on the provided cases.
+
+#### Next steps
+- Train for 1–2 additional epochs with early stopping on ROUGE-Lsum; use a short LR decay tail or smaller end LR for finer convergence.
+- Tune decoding: try beams {4,6}, add length penalty (e.g., 0.6–1.0) and min_length to reduce truncation and improve completeness.
+- Regularization: lightweight label smoothing (e.g., 0.05) to improve calibration and ROUGE-2 stability.
+- Data: continue instruction-prefix ablations; add light paraphrase augmentation for radiology inputs; curate a small held-out set for qualitative human review.
+- Efficiency: if VRAM allows, modestly raise batch size and lower grad accumulation to boost throughput; keep mixed precision (bf16/fp16) and TF32 enabled. This will allow for faster convergence.
+
 
 ### Optimizations Made
 In order to optimize the training, the following steps were taken:
@@ -309,6 +286,9 @@ In order to optimize the training, the following steps were taken:
 2. More suitable hyperparameters -- Adjusted the learning rate down, batch size up, gradient accumulation steps up. This takes more memory and computational resources, but is well within the limits of the A100 GPU used especially with LoRA.
 3. Data augmentation -- Inputs were prepended with "Summarize this radiology report: ", this helps the model understand the context better and generate more accurate summaries, and is especially useful on `flan-t5` as the model is already fine-tuned for summarization.
 4. Evaluates the best model off of ROUGE-Lsum rather than ROUGE-L (Not major, but a small change)
+5. Mixed precision and math optimizations -- `--fp16` or `--bf16` flags to enable mixed precision; TF32 enabled on Ampere+ for faster matmul where supported.
+6. Consistent generation settings during evaluation -- use `num_beams=4` and `generation_max_length=128` for consistent ROUGE scoring.
+
 
 ## File Structure
 

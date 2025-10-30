@@ -1,0 +1,130 @@
+Case 1
+SOURCE:
+Chronic parenchymal changes. Lingular laminar atelectasis.
+---
+SUMMARY -- FROM DATA:
+There are long-term changes in the lung tissue. There is a collapse of a part of the lung called the lingual segment.
+---
+SUMMARY:
+There are long-term changes in the lung tissue. There is a collapsed lung in the lower part of the lung.
+---
+BASE WITH PROMPT:
+Acute parenchymal changes. Lingular laminar atelectasis.
+
+Case 2
+SOURCE:
+No significant radiological alterations.
+---
+SUMMARY -- FROM DATA:
+There are no important changes seen in the x-ray images.
+---
+SUMMARY:
+There are no significant changes seen in the radiology images.
+---
+BASE WITH PROMPT:
+This report does not identify any significant radiological alterations.
+
+Case 3
+SOURCE:
+Perihilar interstitial infiltrates with central distribution and prominent hila. Peripheral pulmonary opacity occupying the right costophrenic angle. Findings are consistent with a respiratory tract infection. No clear parenchymal consolidation is observed.
+---
+SUMMARY -- FROM DATA:
+The chest x-ray shows signs of fluid or inflammation in the lung tissue near the airways and blood vessels, mainly in the center of the lungs and around the lung hilum. There is also a hazy area in the right lung's lower corner. These findings suggest a respiratory tract infection. There is no clear solid area of lung tissue consolidation observed.
+---
+SUMMARY:
+There are signs of fluid buildup in the lungs, with a central distribution and a prominent hila. There is also a cloudy area in the right side of the chest that is occupying the right costophrenic angle. These findings are consistent with an infection in the respiratory tract. There are no clear signs of solid areas in the lung tissue.
+---
+BASE WITH PROMPT:
+A perihilar interstitial infiltrate with central distribution and prominent hila. Peripheral pulmonary opacity occupying the right costophrenic angle.
+
+Case 4
+SOURCE:
+Preoperative. Posteroanterior chest X-ray. Findings within normal limits.
+---
+SUMMARY -- FROM DATA:
+Before surgery, a chest X-ray was taken from the back to the front. The results are normal.
+---
+SUMMARY:
+Preoperative chest X-ray taken from the front. The results are normal.
+---
+BASE WITH PROMPT:
+This is a preoperative chest X-ray report. The findings are within normal limits.
+
+Case 5
+SOURCE:
+Reason for consultation: Preoperative ophthalmologic evaluation. Posteroanterior chest radiograph. Cardiomegaly. Aortic elongation. Elongation of the supra-aortic trunks. No pulmonary consolidation is visualized.
+---
+SUMMARY -- FROM DATA:
+The patient came in for an eye exam before surgery and had a chest x-ray taken. The x-ray shows an enlarged heart, a stretched aorta, and elongated blood vessels above the aorta. There are no signs of pneumonia or fluid buildup in the lungs.
+---
+SUMMARY:
+The patient came in for a check-up before surgery. The chest x-ray was taken from the front. The heart is enlarged. The main blood vessel, called the aorta, is elongated. The upper and lower parts of the lungs are also longer than normal. There is no sign of lung consolidation.
+---
+BASE WITH PROMPT:
+Consult a physician for a preoperative ophthalmologic evaluation.
+
+Case 6
+SOURCE:
+Within normal limits.
+---
+SUMMARY -- FROM DATA:
+Everything looks normal.
+---
+SUMMARY:
+Everything looks normal.
+---
+BASE WITH PROMPT:
+This radiology report provides a comprehensive overview of radiology in the United States. This report is intended to provide a brief overview of the radiology profession in the U.S. and the United Kingdom. It also provides an overview of a number of important radiology specialties, including radiology, radiology, radiosurgery, and radiology.
+
+Case 7
+SOURCE:
+No evidence of consolidation or significant pulmonary infiltrate is identified. No signs of pleural effusion. The cardiomediastinal silhouette is within normal limits.
+---
+SUMMARY -- FROM DATA:
+No signs of pneumonia or significant lung infection are found. There are no indications of fluid around the lungs. The size and shape of the heart and surrounding area are normal.
+---
+SUMMARY:
+There is no sign of pneumonia or significant lung infection. There are no signs of fluid around the lungs. The heart and middle chest area look normal.
+---
+BASE WITH PROMPT:
+The pulmonary infiltrate is not significant.
+
+Case 8
+SOURCE:
+Aortic elongation is observed. Bibasal hypoventilation is present.
+---
+SUMMARY -- FROM DATA:
+The aorta, which is the main blood vessel coming out of the heart, appears elongated. Both lower parts of the lungs are not getting enough air.
+---
+SUMMARY:
+The aorta, which is the main blood vessel carrying blood from the heart, is elongated. There is also a condition called hypoventilation in both lower parts of the lungs.
+---
+BASE WITH PROMPT:
+Aortic elongation is observed. Bibasal hypoventilation is present.
+
+Case 9
+SOURCE:
+Peripheral opacities predominantly in the left lung without significant changes.
+---
+SUMMARY -- FROM DATA:
+There are some cloudy areas mainly in the left lung, but they haven't changed much.
+---
+SUMMARY:
+There are hazy areas mainly in the left lung, but there are no major changes.
+---
+BASE WITH PROMPT:
+The left opacities are predominantly in the left lung without significant changes.
+
+Case 10
+SOURCE:
+The cardiomediastinal silhouette is of normal size. No pulmonary consolidation is observed. No pleural effusion is present.
+---
+SUMMARY -- FROM DATA:
+The size of the heart and the area around it is normal. There is no evidence of lung infection. No fluid buildup is seen around the lungs.
+---
+SUMMARY:
+The heart and middle chest area look normal in size. There is no sign of lung consolidation. No fluid around the lungs is present.
+---
+BASE WITH PROMPT:
+This is a computed tomography (CT) scan of a cardiomediastinal artery.
+
