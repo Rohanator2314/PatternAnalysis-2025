@@ -58,6 +58,9 @@ Transformer models are a type of neural network architecture that has been shown
 Transformer models are composed of an encoder and a decoder, which work together to process input data and generate output data. The encoder takes the input data and transforms it into a fixed-length representation, while the decoder takes this representation and generates the output data. A key feature of the transformer architecture is self-attention, which is what allows the model to essentially give context to each token through an attention layer. The general transformer architecture is shown below:
 
 ![Transformer Model Architecture](assets/transformer_architecture.png)
+<p align="center">
+  <em>Figure 1: Transformer Model Architecture (Vaswani et al., 2024)</em>
+</p>
 
 This same architecture is used in google's T5 model.\
 To fine tune the model, it is trained on our dataset using cross-entropy loss, AdamW optimizer, and a cosine learning rate scheduler with a custom PyTorch trainer module.
@@ -96,7 +99,11 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 30.0 | 50.0 | 73.0 | 94.0  | 208.0 | 817  |
 | Chars  | 150048 | 7 | 167.0| 280.0| 408.0| 522.0 | 1163.5299999999988 | 4709 |
 
-<img src="assets/layman_len_report.png" alt="Layman report length distribution" width="400rem"/>
+<p align="center">
+    <img src="assets/layman_len_report.png" alt="Layman report length distribution" width="800"/>
+    <br/>
+    <em>Figure 2: Layman Report Length Distribution</em>
+</p>
 
 **Histogram Findings -- Radiology Report**:
 
@@ -106,7 +113,11 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 16.0 | 30.0 | 46.0 | 61.0  | 154.0 | 964  |
 | Chars  | 150048 | 5 | 119.0| 211.0| 322.0| 419.0 | 1078.0 | 6706 |
 
-<img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="400rem"/>
+<p align="center">
+    <img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="800"/>
+    <br/>
+    <em>Figure 3: Radiology Report Length Distribution</em>
+</p>
 
 Based off this, the model truncates input tokens to a maximum of 128.
 
@@ -207,6 +218,9 @@ It can be seen that the model correctly translates the radiological findings whi
 LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This adds $\frac{\alpha}{r}\cdot B\cdot A\cdot x$ parameters, where $\alpha$ is the scaling factor, $r$ is the rank of the low-rank approximation, $B$ is the number of blocks, $A$ is the number of adapters, and $x$ is the number of parameters in the original model. See the diagram below for a visual representation.
 
 ![LoRA Diagram](assets/LoRA.png)
+<p align="center">
+  <em>Figure 4: LoRA Diagram (Daily Dose of Data Science)</em>
+</p>
 
 This approach significantly reduces the number of parameters that need to be updated, resulting in faster training times and lower memory usage.
 
