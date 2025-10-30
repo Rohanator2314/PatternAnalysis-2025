@@ -73,7 +73,7 @@ Transformer models are composed of an encoder and a decoder, which work together
 This same architecture is used in google's T5 model. The fine tuning process effectively modifies the model's weights to adapt to the specific task at hand. The general fine-tuning workflow can be seen below:
 
 <p align="center" style="background: white">
-    <img src="assets/finetune.svg" alt="Fine Tuning Workflow" width="800"/>
+    <img src="assets/finetune.png" alt="Fine Tuning Workflow" width="800"/>
     <br/>
     <em>Figure 2: Fine Tuning Workflow</em>
 </p>
