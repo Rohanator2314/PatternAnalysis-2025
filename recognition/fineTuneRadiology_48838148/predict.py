@@ -4,36 +4,36 @@ import argparse
 from typing import List
 
 import torch
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from peft import PeftModel
+
+from modules import SummarizationModel, GenerationConfig
 
 
 def generate_summaries(model_dir: str, inputs: List[str], is_lora: bool = False, max_new_tokens: int = 128, num_beams: int = 4):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
 
     if is_lora:
-        base = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base")
-        model = PeftModel.from_pretrained(base, model_dir).to(device)
+        sm = SummarizationModel.from_lora(
+            adapter_dir=model_dir,
+            base_model_name="google/flan-t5-base",
+            tokenizer_name_or_path=model_dir,
+            device=device,
+        )
     else:
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_dir).to(device)
+        sm = SummarizationModel.from_finetuned(model_dir=model_dir, device=device)
 
-    enc = tokenizer(inputs, padding=True, truncation=True, return_tensors="pt").to(device)
-    output_ids = model.generate(**enc, max_new_tokens=max_new_tokens, num_beams=num_beams)
-    return tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+    gen_cfg = GenerationConfig(max_new_tokens=max_new_tokens, num_beams=num_beams)
+    return sm.generate(inputs=inputs, gen_cfg=gen_cfg, device=torch.device(device))
 
 
 def generate_summaries_base(inputs: List[str], max_new_tokens: int = 128, num_beams: int = 4):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
-    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to(device)
+    sm = SummarizationModel.from_finetuned(model_dir="google/flan-t5-base", device=device)
 
     # Add 'Summarize this radiology report:\n' to the input text
     inputs = ["Summarize this radiology report:\n" + text for text in inputs]
 
-    enc = tokenizer(inputs, padding=True, truncation=True, return_tensors="pt").to(device)
-    output_ids = model.generate(**enc, max_new_tokens=max_new_tokens, num_beams=num_beams)
-    return tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+    gen_cfg = GenerationConfig(max_new_tokens=max_new_tokens, num_beams=num_beams)
+    return sm.generate(inputs=inputs, gen_cfg=gen_cfg, device=torch.device(device))
 
 
 def main():
