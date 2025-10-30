@@ -96,7 +96,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 30.0 | 50.0 | 73.0 | 94.0  | 208.0 | 817  |
 | Chars  | 150048 | 7 | 167.0| 280.0| 408.0| 522.0 | 1163.5299999999988 | 4709 |
 
-<img src="assets/layman_len_report.png" alt="Layman report length distribution" width="40rem"/>
+<img src="assets/layman_len_report.png" alt="Layman report length distribution" width="400rem"/>
 
 **Histogram Findings -- Radiology Report**:
 
@@ -106,7 +106,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 16.0 | 30.0 | 46.0 | 61.0  | 154.0 | 964  |
 | Chars  | 150048 | 5 | 119.0| 211.0| 322.0| 419.0 | 1078.0 | 6706 |
 
-<img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="40rem"/>
+<img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="400rem"/>
 
 Based off this, the model truncates input tokens to a maximum of 128.
 
@@ -204,7 +204,7 @@ It can be seen that the model correctly translates the radiological findings whi
 
 ### What is LoRA
 
-LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This adds $\frac{\alpha}{r}\dot B\dot A\dot x$ parameters, where $\alpha$ is the scaling factor, $r$ is the rank of the low-rank approximation, $B$ is the number of blocks, $A$ is the number of adapters, and $x$ is the number of parameters in the original model.
+LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning method which freezes the base weights of the model and updates only low-rank adapters during training. This adds $\frac{\alpha}{r}\cdot B\cdot A\cdot x$ parameters, where $\alpha$ is the scaling factor, $r$ is the rank of the low-rank approximation, $B$ is the number of blocks, $A$ is the number of adapters, and $x$ is the number of parameters in the original model. See the diagram below for a visual representation.
 
 ![LoRA Diagram](assets/LoRA.png)
 
@@ -287,16 +287,19 @@ In order to optimize the training, the following steps were taken:
 
 ## File Structure
 
-- `assets/` — Images and plots used in the README and analysis.
-- `data/` — Local cache for the BioLaySumm dataset saved by `dataset.py` at `data/BioLaySumm2025-LaymanRRG-opensource-track` (created after first download).
-- `outputs/` — Training artifacts and checkpoints saved by `train.py` (e.g., `best_model` or `best_model_lora`).
-- `train.py` — Thin wrapper delegating to the custom PyTorch trainer module (`Train`) for fine-tuning (LoRA optional).
-- `predict.py` — Loads a trained checkpoint and generates lay summaries (`--model_dir`, `--input_text`, `--is_lora`).
-- `dataset.py` — Handles dataset download, local caching, and tokenization utilities.
-- `utils.py` — Dataset cleaning and histogram/analysis helpers.
-- `modules.py` — Thin model wrapper (`SummarizationModel`) and generation config.
-- `pyproject.toml`, `uv.lock` — Project and dependency lock files for UV.
-- `requirements.txt` — Dependencies for pip-based installation.
+```
+├── assets/           # Images and plots used in the README and analysis.
+├── data/             # Local cache for the BioLaySumm dataset.
+├── outputs/          # Training artifacts and checkpoints saved by `train.py`.
+├── dataset.py        # Handles dataset download, local caching, and tokenization utilities.
+├── modules.py        # `SummarizationModel` and main training loop module (`Train`).
+├── predict.py        # Loads a trained checkpoint and generates lay summaries.
+├── requirements.txt  # Dependencies for pip-based installation.
+├── train.py          # Wrapper delegating to `Train` for fine-tuning (LoRA optional).
+├── utils.py          # Dataset cleaning and histogram/analysis helpers.
+├── uv.lock           # Project and dependency lock files for UV.
+└── pyproject.toml    # Project and dependency lock files for UV.
+```
 
 ## Installation
 
@@ -419,6 +422,6 @@ On the training side:
 
 * NVIDIA Corporation. (n.d.). *Mixed precision training*. [https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html](https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html)
 
-https://www.dailydoseofds.com/implementing-lora-from-scratch-for-fine-tuning-llms/
+* Chawla, A. (2024, February 26). *Implementing LoRA from scratch for fine-tuning LLMs*. *Daily Dose of Data Science*. [https://www.dailydoseofds.com/implementing-lora-from-scratch-for-fine-tuning-llms/](https://www.dailydoseofds.com/implementing-lora-from-scratch-for-fine-tuning-llms/) ([dailydoseofds.com])
 
-https://doi.org/10.48550/arXiv.2303.15647
+* Lialin, V., Deshpande, V., Yao, X., & Rumshisky, A. (2023). *Scaling down to scale up: A guide to parameter-efficient fine-tuning* (arXiv preprint arXiv:2303.15647). [https://doi.org/10.48550/arXiv.2303.15647](https://doi.org/10.48550/arXiv.2303.15647)
