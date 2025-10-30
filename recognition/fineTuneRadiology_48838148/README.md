@@ -244,7 +244,7 @@ Only adapter parameters are updated; base weights remain frozen. Checkpoints are
 | ROUGE-2 (final epoch)                 | 0.4689090514 (46.89%)                |
 | ROUGE-L (final epoch)                 | 0.6188416958 (61.88%)                |
 | ROUGE-Lsum (final epoch)              | 0.6188210466 (61.88%)                |
-| Total training time                   | 8041.1694 seconds (≈ 2:14:01.17)     |
+| Total training time                   | 2880.36 seconds (≈ 0:48:0)           |
 | Total epochs                          | 3.0                                  |
 
 ### Hyperparameters

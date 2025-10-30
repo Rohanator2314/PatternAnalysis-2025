@@ -11,7 +11,9 @@ import math
 from contextlib import nullcontext
 # PEFT is lazily imported when LoRA is enabled
 from dataset import get_tokenised_data, DataConfig
+from evaluate import load
 from utils import plot_loss_curve, plot_lr_curve
+import numpy as np
 
 MODEL = "google/flan-t5-base"
 
@@ -74,6 +76,99 @@ class SummarizationModel(torch.nn.Module):
     def to_device(self, device: str):
         self.model.to(device)
         return self
+
+    # --- ROUGE utilities ---
+
+    def compute_rouge_from_ids(self, preds, labels):
+        """
+        Compute ROUGE given predicted and label token ids (supports -100 masking).
+        Accepts numpy arrays or torch tensors (batch, seq_len).
+        """
+        rouge = load("rouge")
+        tok = self.tokenizer
+
+        if torch.is_tensor(preds):
+            preds = preds.detach().cpu().numpy()
+        if torch.is_tensor(labels):
+            labels = labels.detach().cpu().numpy()
+
+        preds = np.where(preds != -100, preds, tok.pad_token_id)
+        labels = np.where(labels != -100, labels, tok.pad_token_id)
+
+        decoded_preds = tok.batch_decode(preds, skip_special_tokens=True)
+        decoded_labels = tok.batch_decode(labels, skip_special_tokens=True)
+
+        results = rouge.compute(
+            predictions=[p.strip() for p in decoded_preds],
+            references=[l.strip() for l in decoded_labels],
+            use_stemmer=True,
+        )
+        return {
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
+            "rougeLsum": results["rougeLsum"],
+        }
+
+    def compute_rouge_from_text(self, predictions: List[str], references: List[str]):
+        """
+        Compute ROUGE given lists of prediction and reference strings.
+        """
+        rouge = load("rouge")
+        results = rouge.compute(
+            predictions=[p.strip() for p in predictions],
+            references=[r.strip() for r in references],
+            use_stemmer=True,
+        )
+        return {
+            "rouge1": results["rouge1"],
+            "rouge2": results["rouge2"],
+            "rougeL": results["rougeL"],
+            "rougeLsum": results["rougeLsum"],
+        }
+
+    @torch.no_grad()
+    def generate_and_rouge(
+        self,
+        inputs: List[str],
+        references: List[str],
+        gen_cfg: GenerationConfig = GenerationConfig(),
+        device: Optional[torch.device] = None,
+    ):
+        """
+        Generate summaries and compute ROUGE vs. references.
+        Returns (metrics_dict, decoded_predictions).
+        """
+        preds = self.generate(inputs, gen_cfg=gen_cfg, device=device)
+        metrics = self.compute_rouge_from_text(preds, references)
+        return metrics, preds
+
+    def compute_metrics_builder(self):
+        """
+        Return a Trainer-compatible compute_metrics callable that consumes (preds, labels) ids.
+        """
+        tok = self.tokenizer
+        rouge = load("rouge")
+
+        def compute_metrics(eval_pred):
+            preds, labels = eval_pred
+            preds = np.where(preds != -100, preds, tok.pad_token_id)
+            decoded_preds = tok.batch_decode(preds, skip_special_tokens=True)
+            labels = np.where(labels != -100, labels, tok.pad_token_id)
+            decoded_labels = tok.batch_decode(labels, skip_special_tokens=True)
+            results = rouge.compute(
+                predictions=[p.strip() for p in decoded_preds],
+                references=[l.strip() for l in decoded_labels],
+                use_stemmer=True,
+            )
+            return {
+                "rouge1": results["rouge1"],
+                "rouge2": results["rouge2"],
+                "rougeL": results["rougeL"],
+                "rougeLsum": results["rougeLsum"],
+            }
+
+        return compute_metrics
 
     @classmethod
     def from_finetuned(cls, model_dir: str, device: Optional[str] = None):
