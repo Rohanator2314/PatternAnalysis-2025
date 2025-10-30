@@ -246,6 +246,17 @@ Only adapter parameters are updated; base weights remain frozen. Checkpoints are
 | ROUGE-Lsum (final epoch)              | 0.6188210466 (61.88%)                |
 | Total training time                   | 2880.36 seconds (≈ 0:48:0)           |
 | Total epochs                          | 3.0                                  |
+peak gpu 8.4GB
+
+with batch_size 8, grad 1:
+Validation ROUGE:
+  rouge1: 0.7042
+  rouge2: 0.5105
+  rougeL: 0.6485
+  rougeLsum: 0.6485
+
+time: 34.9 min + 34.8 min + 34.5 min
+peak gpu usage 3.75 GB
 
 ### Hyperparameters
 
