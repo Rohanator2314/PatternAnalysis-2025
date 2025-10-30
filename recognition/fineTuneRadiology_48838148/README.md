@@ -3,24 +3,39 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Installation](#installation)
+2. [Model Choice](#model-choice)
+3. [What is Fine Tuning?](#what-is-fine-tuning)
+4. [Dataset](#dataset)
+5. [Data Augmentation](#data-augmentation)
+6. [Fine Tuning](#fine-tuning)
+    - [Training Setup](#training-setup)
+7. [Full parameter training results](#full-parameter-training-results)
+    - [Hyperparameters](#hyperparameters)
+    - [Sample predictions](#sample-predictions)
+    - [Analysis](#analysis)
+    - [Optimizations Made](#optimizations-made)
+8. [LoRA Training results](#lora-training-results)
+    - [What is LoRA](#what-is-lora)
+    - [How to use LoRA](#how-to-use-lora)
+    - [Results](#results)
+    - [Hyperparameters](#hyperparameters-1)
+    - [Sample predictions](#sample-predictions-1)
+    - [Analysis](#analysis-1)
+    - [Optimizations Made](#optimizations-made-1)
+9. [File Structure](#file-structure)
+10. [Installation](#installation)
     - [Requirements](#requirements)
-    - [UV](#uv)
-3. [Usage](#usage)
-4. [File Structure](#file-structure)
-5. [Dataset](#dataset)
-6. [Data Augmentation](#data-augmentation)
-7. [Model Choice](#model-choice)
-8. [Fine Tuning](#fine-tuning)
-9. [LoRA](#lora)
-10. [Training hyperparameters results etc](#training-hyperparameters-results-etc)
-11. [Conclusion](#conclusion)
-12. [References](#references)
+    - [Setup](#setup)
+12. [Usage](#usage)
+    - [Training](#training)
+    - [Predictions](#predictions)
+13. [Future Improvements](#future-improvements)
+14. [References](#references)
 
 ## Overview
 
 **Problem:**\
-After getting imaging done, patients often want to know their results immediately and directly, rather than going to a GP or specialist who will brief them on their radiology report. Patients have access to their radiology reports, but often need help understanding them. In addition, tools like chatGPT are not all together trust-worthy enough to translate radiology reports into layperson-friendly summaries.\
+After getting imaging done, patients often want to know their results immediately and directly, rather than going to a GP or specialist who will brief them on their radiology report. Patients have access to their radiology reports, but often need help understanding them. Radiology reports contain complex medical terminology and jargon that can be difficult for patients to interpret. In addition, tools like chatGPT are not all together trust-worthy enough to translate radiology reports into layperson-friendly summaries.\
 This project aims to address these issues by fine-tuning an open-source encoder-decoder language model with radiology report inputs and lay summary outputs from the [BioLaySumm2025](https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track) dataset -- increasing its accuracy and reliability.
 
 **Finetuning Model:**\
@@ -30,13 +45,18 @@ This project aims to address these issues by fine-tuning an open-source encoder-
 
 The model used is `google/flan-t5-base`, an encoder–decoder Transformer instruction-tuned on a wide range of tasks, importantly including summarization. The base model offers a strong quality/compute trade-off and is small enough for consumer GPUs while remaining expressive for domain adaptation. FLAN-T5 is particularly effective for tasks like **radiology-to-layperson summarization** because it was trained on instruction-following data, making it highly capable in handling **contextual instructions**.
 
+| Attribute                     | **FLAN-T5 Base**    |
+| ----------------------------- | ------------------- |
+| **Total Parameters**          | 247,577,856         |
+| **LoRA Trainable Fraction**   | 1.41% (3,538,944)   |
+
 The encoder-decoder model architecture was chosen over decoder-only models because it allows for better control over the generation process and a more effective fine-tuning process.
 
 ## What is Fine Tuning?
 
 Transformer models are a type of neural network architecture that has been shown to be highly effective for natural language processing tasks. They are particularly well-suited for tasks such as language translation, text summarization, and question answering.
 
-Transformer models are composed of an encoder and a decoder, which work together to process input data and generate output data. The encoder takes the input data and transforms it into a fixed-length representation, while the decoder takes this representation and generates the output data. The general transformer architecture is shown below:
+Transformer models are composed of an encoder and a decoder, which work together to process input data and generate output data. The encoder takes the input data and transforms it into a fixed-length representation, while the decoder takes this representation and generates the output data. A key feature of the transformer architecture is self-attention, which is what allows the model to essentially give context to each token through an attention layer. The general transformer architecture is shown below:
 
 ![Transformer Model Architecture](assets/transformer_architecture.png)
 
@@ -77,7 +97,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 30.0 | 50.0 | 73.0 | 94.0  | 208.0 | 817  |
 | Chars  | 150048 | 7 | 167.0| 280.0| 408.0| 522.0 | 1163.5299999999988 | 4709 |
 
-<img src="assets/layman_len_report.png" alt="Layman report length distribution" width="200"/>
+<img src="assets/layman_len_report.png" alt="Layman report length distribution" width="40rem"/>
 
 **Histogram Findings -- Radiology Report**:
 
@@ -87,7 +107,7 @@ Finally, to optimize the training, the length of the layman report and radiology
 | Words  | 150048 | 1 | 16.0 | 30.0 | 46.0 | 61.0  | 154.0 | 964  |
 | Chars  | 150048 | 5 | 119.0| 211.0| 322.0| 419.0 | 1078.0 | 6706 |
 
-<img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="200"/>
+<img src="assets/radiology_len_report.png" alt="Radiology report length distribution" width="40rem"/>
 
 Based off this, the model truncates input tokens to a maximum of 128.
 
@@ -128,6 +148,16 @@ For the first run of training, the model was trained without optimizations such 
 | Total training time                   | 11012.296 seconds (≈ 3:03:30)        |
 | Total epochs                          | 3.0                                  |
 
+### Hyperparameters
+
+| Hyperparameter                        | Value                                |
+|--------------------------------------:|-------------------------------------:|
+| Learning rate                         | 2e-4                                 |
+| Batch size                            | 8                                    |
+| Gradient accumulation steps           | 1                                    |
+| Epochs                                | 3                                    |
+| Input text prepending                 | False                                |
+
 ### Sample predictions:
 
 ---
@@ -135,6 +165,9 @@ For the first run of training, the model was trained without optimizations such 
 #### **CASE 1**
 **SOURCE**:\
 Right parahilar infiltrate and atelectasis. Increased retrocardiac density related to atelectasis and consolidation associated with right pleural effusion. Clinical data is important for correct radiological assessment.
+
+**BASE MODEL (with prompt)**:\
+Clinical data are important for correct radiological assessment of right parahilar infiltrate and atelectasis.
 
 **SUMMARY**:\
 There is an area of lung inflammation and partially collapsed lung on the right side near the bronchus. There is also an increased density behind the heart, which could be due to the collapsed lung and lung tissue thickening, along with fluid buildup around the lung on the right side. It is important to have clinical data to accurately assess the radiological findings.
@@ -148,6 +181,9 @@ There is a cloudiness near the right lung's airways and a part of the lung has c
 **SOURCE**:\
 Calcified granuloma in the right lung vertex.
 
+**BASE MODEL (with prompt)**:\
+A calcified granuloma in the right lung vertex.
+
 **SUMMARY**:\
 There is a calcified granuloma, which is a type of hardened lump, located at the top of the right lung.
 
@@ -155,6 +191,7 @@ There is a calcified granuloma, which is a type of hardened lump, located at the
 There is a calcified granuloma located at the top of the right lung.
 
 ---
+> Prompt: `Summarize this radiology report:\n`
 
 ### Analysis
 It can be seen that the model correctly translates the radiological findings while also following the same sentence structure as the actual layman report. This shows that the fine tuning has indeed had an effect, although more epochs would be needed to achieve better results and more similar language (resulting also in higher ROUGE-L scores). Even so the model still generates a report that is understandable and informative.
@@ -189,6 +226,10 @@ Only adapter parameters are updated; base weights remain frozen. Checkpoints are
 | Total training time                   | 8041.1694 seconds (≈ 2:14:01.17)     |
 | Total epochs                          | 3.0                                  |
 
+### Hyperparameters
+
+The hyperparameters used are the same as the defaults, found [here](#Training)
+
 ### Sample predictions:
 
 ---
@@ -222,7 +263,7 @@ A calcified granuloma is present in the right lung area.
 There is a calcified granuloma located at the top of the right lung.
 
 ---
-Prompt: `Summarize this radiology report:\n`
+> Prompt: `Summarize this radiology report:\n`
 
 ### Analysis
 With the optimizations made, training time was reduced by almost 50% while maintaining greater performance:
@@ -230,7 +271,7 @@ With the optimizations made, training time was reduced by almost 50% while maint
 - Training time reduced dramatically despite larger batch sizes and more gradient accumulation steps.
 - Likely due to the larger effective batch size and additional data augmentation the model performed much better, achieving a ROUGE-Lsum score of 61.88% in only 3 epochs.
 
-## Optimizations Made
+### Optimizations Made
 In order to optimize the training, the following steps were taken:
 1. Use of LoRA -- Fine-tuning with LoRA (Low-Rank Adaptation) allows for efficient training of large models by adapting only a small number of parameters, which allow for more efficient training -- more training can be done in the same time without any significant loss in performance.
 2. More suitable hyperparameters -- Adjusted the learning rate down, batch size up, gradient accumulation steps up. This takes more memory and computational resources, but is well within the limits of the A100 GPU used especially with LoRA.
@@ -240,9 +281,6 @@ In order to optimize the training, the following steps were taken:
 ## File Structure
 
 - `assets/` — Images and plots used in the README and analysis.
-  - `layman_len_report.png` — Histogram of layman summary lengths.
-  - `radiology_len_report.png` — Histogram of radiology report lengths.
-  - `data-card.png`, `example_stuff.txt` — Misc assets.
 - `data/` — Local cache for the BioLaySumm dataset saved by `dataset.py` at `data/BioLaySumm2025-LaymanRRG-opensource-track` (created after first download).
 - `outputs/` — Training artifacts and checkpoints saved by `train.py` (e.g., `best_model` or `best_model_lora`).
 - `train.py` — Fine-tunes `google/flan-t5-base` with Hugging Face Trainer (LoRA optional).
@@ -252,8 +290,6 @@ In order to optimize the training, the following steps were taken:
 - `modules.py` — Thin model wrapper (`SummarizationModel`) and generation config.
 - `pyproject.toml`, `uv.lock` — Project and dependency lock files for UV.
 - `requirements.txt` — Dependencies for pip-based installation.
-- `.python-version` — Python tool version pin.
-- `.gitignore` — Git ignore rules.
 
 ## Installation
 
@@ -329,12 +365,23 @@ Evaluate the model with your own input:
 
 ## Future Improvements
 
-- Implement a more sophisticated evaluation metric for model performance.
-- Explore different architectures for the model and larger models.
-- Optimize hyperparameters for better performance.
-- Add support for multi-GPU training.
-- Implement early stopping based on validation loss.
+I plan to improve evaluation by adopting more robust metrics and refining training procedures to better capture summary quality. Specifically, by using visualization techniques on the model, such as attention heatmaps and loss curves, I will be able to make more informed decisions about model performance and potential improvements.
 
-## References
-https://medium.com/@gagangupta_82781/understanding-the-t5-model-a-comprehensive-guide-b4d5c02c234b
-https://medium.com/@qmsoqm2/auto-regressive-vs-sequence-to-sequence-d7362eda001e
+I will also explore larger and alternative architectures to test whether capacity and design changes yield stronger layperson summaries.
+
+On the training side:
+- Tuning hyperparameters more systematically
+- Add multi-GPU support for faster experimentation
+- Incorporate early stopping based on validation signals to prevent overfitting and reduce unnecessary compute.
+
+## References and Acknowledgments
+
+* Gupta, G. (n.d.). *Understanding the T5 model: A comprehensive guide*. *Medium*. [https://medium.com/@gagangupta_82781/understanding-the-t5-model-a-comprehensive-guide-b4d5c02c234b](https://medium.com/@gagangupta_82781/understanding-the-t5-model-a-comprehensive-guide-b4d5c02c234b)
+
+* qmsoqm2. (n.d.). *Auto-regressive vs sequence-to-sequence*. *Medium*. [https://medium.com/@qmsoqm2/auto-regressive-vs-sequence-to-sequence-d7362eda001e](https://medium.com/@qmsoqm2/auto-regressive-vs-sequence-to-sequence-d7362eda001e)
+
+* Hugging Face. (n.d.). *Trainer and Training Arguments*. *Transformers documentation*. [https://huggingface.co/docs/transformers/en/main_classes/trainer](https://huggingface.co/docs/transformers/en/main_classes/trainer)
+
+* Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I. (2017). *Attention is all you need*. *arXiv*. [https://doi.org/10.48550/arXiv.1706.03762](https://doi.org/10.48550/arXiv.1706.03762)
+
+* NVIDIA Corporation. (n.d.). *Mixed precision training*. [https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html](https://docs.nvidia.com/deeplearning/performance/mixed-precision-training/index.html)
